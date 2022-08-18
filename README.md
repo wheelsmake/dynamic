@@ -138,16 +138,9 @@ dy.addMethods({
 <script src="url/to/dynamic.js"></script>
 ```
 
-> **Warning**
-> 测试warning
-
-
-
-> ***
-
-
-
----
+> **Warning** 警告
+>
+> 内容
 
 # API 指引
 
