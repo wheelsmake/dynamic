@@ -122,8 +122,6 @@ dy.addMethods({
 
 你可能已经有所疑惑。下文将逐语句解释这些 JavaScript，你也可以跳过这里，直接浏览下文的[教程](#教程)。
 
-
-
 //todo: 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id="::ex::"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
 
 # 教程
@@ -138,11 +136,23 @@ dy.addMethods({
 <script src="url/to/dynamic.js"></script>
 ```
 
-> **Warning**警告
+> **Warning** 警告
 >
-> 内容
+> 不要将创建 dynamic 实例的脚本置于 `<head>` 中，因为 `<head>` 中的脚本将在 HTML 未加载完毕时就运行，进而导致 dynamic 无法获取根节点。
 
-# API 指引
+## 创建 dynamic 实例
+
+```typescript
+const dy = Dynamic.new(/*Element或css 选择符*/);
+```
+
+传入的唯一参数为根节点，根节点**也会**被该实例管理。
+
+现在你可以看看 `dy` 这个实例里暴露了什么东西。
+
+//todo:
+
+# API 指引 todo:
 
 ## 属性与数据绑定
 
@@ -286,6 +296,14 @@ tsc --init
 - 欢迎提出issue，但请保持冷静的态度和对事不对人的基本道德准则。
 - 请不要在未与我沟通的情况下发起PR。
 - 随便 fork。
+
+
+
+
+
+
+
+
 
 
 
