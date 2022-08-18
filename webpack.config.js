@@ -1,9 +1,13 @@
+const utf8bom = require("webpack-utf8-bom");
 const path = require("path");
 module.exports = {
     mode: "development",
     optimization: {
         minimize: false,
     },
+    plugins: [
+        new utf8bom(true)
+    ],
     entry: "./src/dynamic.export.ts",
     devtool: "source-map",
     output: {
@@ -23,6 +27,5 @@ module.exports = {
             use: "ts-loader",
             exclude: /node_modules/
         }]
-    },
-    plugins: []
+    }
 };

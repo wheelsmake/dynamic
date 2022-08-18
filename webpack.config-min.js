@@ -1,4 +1,5 @@
 const TerserPlugin = require("terser-webpack-plugin");
+const utf8bom = require("webpack-utf8-bom");
 const path = require("path");
 module.exports = {
     mode: "production",
@@ -28,6 +29,9 @@ module.exports = {
             })
         ]
     },
+    plugins: [
+        new utf8bom(true)
+    ],
     entry: "./src/dynamic.export.ts",
     devtool: "source-map",
     output: {

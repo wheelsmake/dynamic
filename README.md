@@ -36,7 +36,7 @@ dynamic 不一定会利用 vDOM，并且实际上 dynamic 极少打开 vDOM。�
 
 将标记（LJM12914 更喜欢叫它「模板」）和逻辑分离到不同文件是理所当然的分离方式，试问哪家剧院将幕后台下的场面完全敞开给观众？这样做不需要任何视觉上的辅助，也创造了无限细粒度数据重用的可能性。
 
-与 dynamic 的全部交互均可以通过 JavaScript 完成，dynamic 的所有 HTML 插值语法只有一个：双冒号 `::::`。
+与 dynamic 的全部交互均可以通过 JavaScript 完成，dynamic 的所有 HTML 插值语法只有一个：冒号加下划线 `:_ _:`。
 
 ## 不依赖开发环境
 
@@ -109,7 +109,7 @@ import Dynamic from "path/to/dynamic.ts";
         <button @click="dosth">do something</button>
     </div>
     <span>today is: {{date}}</span>
-    <button @click="date++">tomorrow</button>
+    <button @click="date++">tomorrow (date: {{date + 1 &lt;= 31 ? date + 1 : 1}})</button>
 </div>
 ```
 
@@ -119,11 +119,11 @@ import Dynamic from "path/to/dynamic.ts";
 <div id="app">
     <div>
         <ul>::lis::</ul>
-        <input value="--trans_n--" type="text" />
-        <button onclick="dosth()">do something</button>
+        <input value=":_va_:" type="text" />
+        <button onclick="dosth">do something</button>
     </div>
-    <span>::today_s::</span>
-    <button onclick="::today_s::increase">tomorrow</button>
+    <span>today is: ::today_s::</span>
+    <button onclick="date++">tomorrow (date: ::tomorrowDate::)</button>
 </div>
 ```
 
@@ -132,46 +132,27 @@ import Dynamic from "path/to/dynamic.ts";
 ```javascript
 var dy = new Dynamic("#app");
 var myArray = ["a","b","c","d"];
-window.onload = ()=>{
-    dy.exportDN("today_s").setMethod({
+dy.exportDN("today_s").setMethod({
         increase(){
             this.value++;
         }
-	});
-}
+});
 ```
 
 你可能对各种东西有所疑惑。
 
 1. 这和写直接操作 DOM 的代码有什么区别？
 
-   - 最大的区别是：数据可以在 HTML 中被无限重用。
-
-2. 为什么要在 `window.onload` 后执行这些设置？
-
-   - HTML 中的声明式数据节点要在 dynamic 识别 HTML 文档后才会被创建。
-
-3. 看不懂 dynamic 在做什么
-
-   - dynamic 做了以下事情（可查看 `dynamic.ts > class Dynamic > #detectDN()`）
-
-   1. 识别 HTML 文档中的声明。
-   2. 筛选出所有的单纯节点声明，如果目前还没有这个节点，那么创建这个节点。
-   3. 然后将这些节点声明转换为对节点的 `export` 方法调用。
-
+   - 问这个问题和直接不用 dynamic 有什么区别？
 4. 按钮的 `onclick` 属性写了什么
 
    - 这是一个指令节点声明，不是单纯节点声明，作用是调用目标（必须是已存在的）节点 `methods` 中的指定方法。例如上文的 `::today_s::increase` 会被转换为 `today_s.methods.increase()`。又或者传入参数，例如 `::today_s::another("arg")`。
-
 5. 如果直接在 `onclick` 属性上这样写，IDE 会报错
 
    - dynamic 拒绝 DSL，所以推荐这样写。其实 dynamic 也可以识别所有属性前面加上 `:` 的属性，如 `:id="::ex::"` 会将 `ex` 导出节点应用到 `id` 属性上。
    - 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id="::ex::"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
-
-6. 
-
-7. 
-
+4. 
+5. 
 8. dynamic 中不存在应用内变量，只存在作用域内数据节点，
 
 
@@ -191,7 +172,11 @@ window.onload = ()=>{
 ## 开发环境搭建
 
 ```shell
-npm i -D webpack webpack-cli typescript ts-loader terser-webpack-plugin
+npm i -D webpack webpack-cli typescript ts-loader terser-webpack-plugin webpack-utf8-bom
+```
+
+```shell
+tsc --init
 ```
 
 其他配置详见 [`package.json`](package.json)、[`webpack.config.js`](webpack.config.js) 和 [`webpack.config-min.js`](webpack.config-min.js)。

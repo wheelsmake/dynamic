@@ -13,4 +13,24 @@ dy.transDN({
         return data.aa + data.ad;
     }
 }).connectTo("ab"); //链式调用*/
-var dy = new Dynamic("#app");
+var dy = Dynamic.new("#app");
+dy.data.name = "dynamic";
+dy.data.op = function(){
+    if(this.name === 1){
+        return 2;
+    }
+    else if(this.name === "dynamic"){
+        return "hahahahahahaha!";
+    }
+    else{
+        return null;
+    }
+}
+setInterval(()=>{
+    if(dy._.name == "dynamic"){
+        dy._.name = new Date().getTime();
+    }
+    else{
+        dy._.name = "dynamic";
+    }
+},1000);
