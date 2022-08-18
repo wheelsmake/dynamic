@@ -138,10 +138,10 @@ dy.addMethods({
 <script src="url/to/dynamic.js"></script>
 ```
 
-> **警告**
+> **Warning**
 > 测试warning
 
-
+> *****
 
 
 
