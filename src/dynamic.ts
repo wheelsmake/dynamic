@@ -55,7 +55,7 @@ class App{
                 //正常存在该属性
                 if(property in sharpData && !sharpData[property].deleted){
                     //如果传入的是函数，那么就收集函数中需要的属性，将这些属性的shouldUpdate中推一个这个属性
-                    //argument_solved: `a.shouldUpdate[number] = "b"` 的意思是：当属性a发生改变时，要去更新b
+                    //`a.shouldUpdate[number] = "b"` 的意思是：当属性a发生改变时，要去更新b
                     //更新b并不是运行一次b.value函数，而是去更新b.shouldExport，重新运行一遍这些方法，将DOM中的b更新
                     //我们也要同样地去b.shouldUpdate里将它们的shouldExport运行了，因为它们的值也“应该”改变了
                     //这是一个递归过程，一直从shouldUpdate下去，一直运行shouldExport
@@ -117,14 +117,27 @@ class App{
     removeExport(dataProperty :string, func :string | exportFunc){
         return lUtils.data.removeExport(this.#data[dataProperty], func);
     }
-    //note:没有做:_ _:语法的东西，看看需不需要做吧
+    parseTemplate(node :Node) :void{this.#detectInsert(node);}
     #detectInsert(node :Node) :void{
         if(node instanceof Element){
+            //hack:超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
+            //给作用域内每个元素的data和_都弄上这个data，然后只要this一下就出来了！
+            const data = this.data;
+            Object.defineProperty(node, "data", {
+                configurable: false,
+                enumerable: true,
+                get(){return data;}
+            });
+            Object.defineProperty(node, "_", {
+                configurable: false,
+                enumerable: true,
+                get(){return data;}
+            });
             const attrs = node.attributes, children = Array.from(node.childNodes) as Node[];
             //别写in，否则出一大堆方法，NameNodeMap可以用数组那套，NameNodeMap.length返回的是正确的长度
             for(let i = 0; i < attrs.length; i++){
                 //检查属性名和属性值，它们都要求全部是，不允许中途插入
-                if(attrs[i].name.match(/:_[^:]+_:/)){
+                if(attrs[i].name.match(/:_[a-zA-Z$_][\w$]*_:/)){
                     const property = attrs[i].name.substring(2, attrs[i].name.length - 2);
                     if(!(property in this.#data)) this.#data[property] = lUtils.data.createData();
                     const __addedByDynamic__ = function(this :anyObject, oldValue :any){ //参数里放this不影响函数的参数
@@ -136,7 +149,7 @@ class App{
                     //这个用来引发一次导出过程，将:__:标识变成开发者赋的值或undefined
                     (this.#proxy[property] as any) = undefined;
                 }
-                if(attrs[i].value.match(/:_[^:]+_:/)){
+                if(attrs[i].value.match(/:_[a-zA-Z$_][\w$]*_:/)){
                     //name变量用于将属性名转换为值类型，取消响应性
                     const property = attrs[i].value.substring(2, attrs[i].value.length - 2), name = attrs[i].name;
                     if(!(property in this.#data)) this.#data[property] = lUtils.data.createData();
@@ -155,7 +168,7 @@ class App{
             //fixed:如果修改Element的textContent则会覆盖所有子元素，所以我们仅在文本节点上执行这边的代码
             //fixme:但是文本节点很容易被浏览器乱扔，这个目前没想到好的方法
             if(node.textContent){
-                const inserts = [...node.textContent.matchAll(/:_[^:]+_:/g)];
+                const inserts = [...node.textContent.matchAll(/:_[a-zA-Z$_][\w$]*_:/g)];
                 //没有匹配到则为null，匹配到则[n]为:_example_:
                 if(inserts.length > 0){
                     /*note:
@@ -211,6 +224,7 @@ const Dynamic = {
     spa, manifest,
     //实用方法
     e(s: string, scope?: Element | Document): Node | Node[]{return utils.element.e(s, scope);},
+    
     debugger() :number{
         return setInterval(()=>{
             debugger;

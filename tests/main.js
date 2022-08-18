@@ -28,9 +28,10 @@ dy.data.op = function(){
 }
 setInterval(()=>{
     if(dy._.name == "dynamic"){
-        dy._.name = new Date().getTime();
+        dy._.name = "timeNow:_Iamuseless_:" + new Date().getTime();
     }
     else{
         dy._.name = "dynamic";
     }
 },1000);
+dy.data.count = 0;

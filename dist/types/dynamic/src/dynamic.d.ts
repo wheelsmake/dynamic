@@ -7,6 +7,7 @@ declare class App {
     get __privateData__(): dataObject | "BLOCKED IN NON-DEV MODE";
     addExport(dataProperty: string, func: exportFunc): shouldExportA;
     removeExport(dataProperty: string, func: string | exportFunc): shouldExportA;
+    parseTemplate(node: Node): void;
 }
 import * as spa from "./spa";
 import * as manifest from "./manifest";

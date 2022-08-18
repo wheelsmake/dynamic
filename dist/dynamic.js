@@ -116,12 +116,24 @@ class App {
     removeExport(dataProperty, func) {
         return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.removeExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func);
     }
+    parseTemplate(node) { __classPrivateFieldGet(this, _App_instances, "m", _App_detectInsert).call(this, node); }
 }
 _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_instances = new WeakSet(), _App_detectInsert = function _App_detectInsert(node) {
     if (node instanceof Element) {
+        const data = this.data;
+        Object.defineProperty(node, "data", {
+            configurable: false,
+            enumerable: true,
+            get() { return data; }
+        });
+        Object.defineProperty(node, "_", {
+            configurable: false,
+            enumerable: true,
+            get() { return data; }
+        });
         const attrs = node.attributes, children = Array.from(node.childNodes);
         for (let i = 0; i < attrs.length; i++) {
-            if (attrs[i].name.match(/:_[^:]+_:/)) {
+            if (attrs[i].name.match(/:_[a-zA-Z$_][\w$]*_:/)) {
                 const property = attrs[i].name.substring(2, attrs[i].name.length - 2);
                 if (!(property in __classPrivateFieldGet(this, _App_data, "f")))
                     __classPrivateFieldGet(this, _App_data, "f")[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData();
@@ -133,7 +145,7 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                 _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__);
                 __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
             }
-            if (attrs[i].value.match(/:_[^:]+_:/)) {
+            if (attrs[i].value.match(/:_[a-zA-Z$_][\w$]*_:/)) {
                 const property = attrs[i].value.substring(2, attrs[i].value.length - 2), name = attrs[i].name;
                 if (!(property in __classPrivateFieldGet(this, _App_data, "f")))
                     __classPrivateFieldGet(this, _App_data, "f")[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData();
@@ -149,7 +161,7 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
     }
     else if (node instanceof Text) {
         if (node.textContent) {
-            const inserts = [...node.textContent.matchAll(/:_[^:]+_:/g)];
+            const inserts = [...node.textContent.matchAll(/:_[a-zA-Z$_][\w$]*_:/g)];
             if (inserts.length > 0) {
                 const offsets = [], properties = [], text = node.textContent;
                 for (let i = 0; i < inserts.length; i++) {
