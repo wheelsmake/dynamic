@@ -1,19 +1,4 @@
-﻿/*var dy = new Dynamic("#app");
-dy.sourceDN({
-    name: "aa",
-    fetch(){
-        return "Hello world";
-    },
-    frequency: 0
-});
-dy.sourceDN("aa").connectTo("ab");
-dy.transDN({
-    name: "ac",
-    update(data){
-        return data.aa + data.ad;
-    }
-}).connectTo("ab"); //链式调用*/
-var dy = Dynamic.new("#app");
+﻿var dy = Dynamic.new("#app");
 dy.data.name = "dynamic";
 dy.data.op = function(){
     if(this.name === 1){
@@ -26,7 +11,7 @@ dy.data.op = function(){
         return null;
     }
 }
-setInterval(()=>{
+/*setInterval(()=>{
     if(dy._.name == "dynamic"){
         dy._.name = "timeNow:_Iamuseless_:" + new Date().getTime();
     }
@@ -34,4 +19,17 @@ setInterval(()=>{
         dy._.name = "dynamic";
     }
 },1000);
+updateTime();
+setInterval(()=>{
+    updateTime();
+}, 1000);*/
+function updateTime(){
+    const date = new Date();
+    var se = "", second = date.getSeconds().toString();
+    if(second.length == 0) se = "00";
+    else if(second.length == 1) se = `0${second}`;
+    else se = second;
+    dy.data.time = `${date.getHours()}:${date.getMinutes()}:${se}`;
+}
 dy.data.count = 0;
+//Dynamic.disableDevTool();

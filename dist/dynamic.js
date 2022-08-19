@@ -2,20 +2,18 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/dynamic.ts":
-/*!************************!*\
-  !*** ./src/dynamic.ts ***!
-  \************************/
+/***/ "./src/app.ts":
+/*!********************!*\
+  !*** ./src/app.ts ***!
+  \********************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */   "default": () => (/* binding */ App)
 /* harmony export */ });
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../utils/index */ "../utils/index.ts");
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/index */ "./src/utils/index.ts");
-/* harmony import */ var _spa__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./spa */ "./src/spa.ts");
-/* harmony import */ var _manifest__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./manifest */ "./src/manifest.ts");
 var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
     if (kind === "m") throw new TypeError("Private method is not writable");
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
@@ -27,13 +25,11 @@ var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || 
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _App_instances, _App_rootNode, _App_data, _App_proxy, _App_detectInsert;
+var _App_instances, _App_rootNode, _App_data, _App_proxy, _App_initData, _App_methods, _App_processInsert, _App_observer, _App_shouldAnnounceAttrs, _App_observerCB, _App_registerOCB, _App_deleteOCB;
 
 
-const isBeta = true;
 console.info(`dynamic(dnJS) ©LJM12914. https://github.com/wheelsmake/dynamic
 You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
-const isDEVMode = "__dn_DEV__" in window && window.__dn_DEV__ === true && isBeta;
 const s = [
     "鬼片出现了！",
     "Access to deleted property was blocked: "
@@ -43,82 +39,94 @@ class App {
         _App_instances.add(this);
         _App_rootNode.set(this, void 0);
         _App_data.set(this, {});
-        _App_proxy.set(this, void 0);
+        _App_proxy.set(this, {});
+        _App_methods.set(this, {});
+        _App_observer.set(this, void 0);
+        _App_shouldAnnounceAttrs.set(this, []);
         __classPrivateFieldSet(this, _App_rootNode, _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode), "f");
         console.info("creating new dynamic instance with rootNode", rootNode);
-        __classPrivateFieldSet(this, _App_proxy, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
-            get(sharpData, property, proxy) {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                console.log("get", property);
-                if (property in sharpData && !sharpData[property].deleted) {
-                    var result;
-                    if (typeof sharpData[property].value == "function")
-                        result = (sharpData[property].value.bind(proxy))();
-                    else
-                        result = sharpData[property].value;
-                    if (typeof result == "object")
-                        try {
-                            result = JSON.stringify(result);
-                        }
-                        catch { }
-                    return result;
-                }
-                else if (sharpData[property].deleted)
-                    console.warn(`${s[1]}${property}.`);
-                else
-                    return undefined;
-            },
-            set(sharpData, property, newValue, proxy) {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                console.log("set", property, newValue);
-                if (property in sharpData && !sharpData[property].deleted) {
-                    if (typeof newValue == "function") {
-                    }
-                    const oldValue = sharpData[property].value;
-                    sharpData[property].value = newValue;
-                    const exports = sharpData[property].shouldExports, updates = sharpData[property].shouldUpdates;
-                    for (let i = 0; i < updates.length; i++) {
-                    }
-                    for (let i = 0; i < exports.length; i++)
-                        (exports[i].bind(proxy))(oldValue);
-                }
-                else if (sharpData[property].deleted)
-                    console.warn(`${s[1]}${property}.`);
-                else {
-                    sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue, [], []);
-                    if (_utils_index__WEBPACK_IMPORTED_MODULE_1__.data) {
-                    }
-                }
-                return true;
-            },
-            deleteProperty(sharpData, property) {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                const exists = property in sharpData;
-                if (exists)
-                    sharpData[property].deleted = true;
-                return exists;
-            }
-        }), "f");
-        __classPrivateFieldGet(this, _App_instances, "m", _App_detectInsert).call(this, __classPrivateFieldGet(this, _App_rootNode, "f"));
+        __classPrivateFieldGet(this, _App_instances, "m", _App_initData).call(this);
+        __classPrivateFieldGet(this, _App_instances, "m", _App_processInsert).call(this, __classPrivateFieldGet(this, _App_rootNode, "f"));
+        __classPrivateFieldSet(this, _App_observer, new MutationObserver(__classPrivateFieldGet(this, _App_instances, "m", _App_observerCB)), "f");
+        __classPrivateFieldGet(this, _App_observer, "f").observe(__classPrivateFieldGet(this, _App_rootNode, "f"), {
+            attributes: true,
+            attributeOldValue: true,
+            characterData: true,
+            characterDataOldValue: true,
+            childList: true,
+            subtree: true
+        });
     }
     get rootNode() { return __classPrivateFieldGet(this, _App_rootNode, "f"); }
     get data() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
     get _() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
-    get __privateData__() {
-        if (isDEVMode)
-            return __classPrivateFieldGet(this, _App_data, "f");
-        else
-            return "BLOCKED IN NON-DEV MODE";
+    addExport(dataProperty, func) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func); }
+    removeExport(dataProperty, func) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.removeExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func); }
+    addMethods() {
     }
-    addExport(dataProperty, func) {
-        return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func);
+    removeMethods() {
     }
-    removeExport(dataProperty, func) {
-        return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.removeExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func);
-    }
-    parseTemplate(node) { __classPrivateFieldGet(this, _App_instances, "m", _App_detectInsert).call(this, node); }
+    parseHTML(node) { __classPrivateFieldGet(this, _App_instances, "m", _App_processInsert).call(this, node); }
 }
-_App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_instances = new WeakSet(), _App_detectInsert = function _App_detectInsert(node) {
+_App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_observer = new WeakMap(), _App_shouldAnnounceAttrs = new WeakMap(), _App_instances = new WeakSet(), _App_initData = function _App_initData() {
+    __classPrivateFieldSet(this, _App_proxy, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
+        get(sharpData, property, proxy) {
+            property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+            console.log("get", property);
+            if (property in sharpData && !sharpData[property].deleted) {
+                var result;
+                if (typeof sharpData[property].value == "function")
+                    result = (sharpData[property].value.bind(proxy))();
+                else
+                    result = sharpData[property].value;
+                if (typeof result == "object")
+                    try {
+                        result = JSON.stringify(result);
+                    }
+                    catch { }
+                return result;
+            }
+            else if (!(property in sharpData))
+                return undefined;
+            else if (sharpData[property].deleted)
+                console.warn(`${s[1]}${property}.`);
+            else
+                console.error(s[0], "get", property);
+        },
+        set(sharpData, property, newValue, proxy) {
+            property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+            console.log("set", property, newValue);
+            if (property in sharpData && !sharpData[property].deleted) {
+                if (typeof newValue == "function") {
+                }
+                const oldValue = sharpData[property].value;
+                sharpData[property].value = newValue;
+                const exports = sharpData[property].shouldExports, updates = sharpData[property].shouldUpdates;
+                for (let i = 0; i < updates.length; i++) {
+                }
+                for (let i = 0; i < exports.length; i++)
+                    (exports[i].bind(proxy))(oldValue);
+            }
+            else if (!(property in sharpData)) {
+                sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue, [], []);
+                if (_utils_index__WEBPACK_IMPORTED_MODULE_1__.data) {
+                }
+            }
+            else if (sharpData[property].deleted)
+                console.warn(`${s[1]}${property}.`);
+            else
+                console.error(s[0], "set", property);
+            return true;
+        },
+        deleteProperty(sharpData, property) {
+            property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+            const exists = property in sharpData;
+            if (exists)
+                sharpData[property].deleted = true;
+            return exists;
+        }
+    }), "f");
+}, _App_processInsert = function _App_processInsert(node) {
     if (node instanceof Element) {
         const data = this.data;
         Object.defineProperty(node, "data", {
@@ -157,7 +165,7 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
             }
         }
         for (let i = 0; i < node.childNodes.length; i++)
-            __classPrivateFieldGet(this, _App_instances, "m", _App_detectInsert).call(this, node.childNodes[i]);
+            __classPrivateFieldGet(this, _App_instances, "m", _App_processInsert).call(this, node.childNodes[i]);
     }
     else if (node instanceof Text) {
         if (node.textContent) {
@@ -171,8 +179,6 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                     if (!(property in __classPrivateFieldGet(this, _App_data, "f")))
                         __classPrivateFieldGet(this, _App_data, "f")[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData();
                 }
-                if (offsets.length != properties.length)
-                    console.error(s[0], offsets, properties);
                 const NRproperties = _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(properties);
                 const __addedByDynamic__ = function () {
                     var t = text;
@@ -189,20 +195,66 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
     }
     else
         console.error(s[0], node);
+}, _App_observerCB = function _App_observerCB(records) {
+    for (let i = 0; i < records.length; i++) {
+        console.log(records[i]);
+    }
+}, _App_registerOCB = function _App_registerOCB() {
+}, _App_deleteOCB = function _App_deleteOCB() {
 };
 
 
-const Dynamic = {
-    new(rootNode) {
-        return new App(rootNode);
-    },
-    spa: _spa__WEBPACK_IMPORTED_MODULE_2__, manifest: _manifest__WEBPACK_IMPORTED_MODULE_3__,
-    e(s, scope) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e(s, scope); },
-    debugger() {
+/***/ }),
+
+/***/ "./src/dynamic.export.ts":
+/*!*******************************!*\
+  !*** ./src/dynamic.export.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../utils/index */ "../utils/index.ts");
+/* harmony import */ var _app__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./app */ "./src/app.ts");
+/* harmony import */ var _template__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./template */ "./src/template.ts");
+/* harmony import */ var _spa__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./spa */ "./src/spa.ts");
+/* harmony import */ var _manifest__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./manifest */ "./src/manifest.ts");
+
+
+
+
+
+const cI = clearInterval;
+var dtInterval;
+function __disableDevTools__() {
+    dtInterval = (() => {
         return setInterval(() => {
             debugger;
         }, 20);
-    }
+    })();
+    clearInterval = (id) => {
+        if (id != dtInterval)
+            cI.call(window, id);
+    };
+}
+function __enableDevTools__() {
+    clearInterval = cI;
+    clearInterval(dtInterval);
+}
+const Dynamic = {
+    new(rootNode) { return new _app__WEBPACK_IMPORTED_MODULE_1__["default"](rootNode); },
+    template: _template__WEBPACK_IMPORTED_MODULE_2__,
+    spa: _spa__WEBPACK_IMPORTED_MODULE_3__,
+    manifest: _manifest__WEBPACK_IMPORTED_MODULE_4__,
+    e(s, scope) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e(s, scope); },
+    render(args) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.render(args.HTML, args.element, args.insertAfter, args.append); },
+    toHTML(HTML) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.toHTML(HTML); },
+    hatch(element, remove) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.hatch(element, remove); },
+    compose() { },
+    __disableDevTools__,
+    __enableDevTools__
 };
 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.constantize(Dynamic);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dynamic);
@@ -253,6 +305,18 @@ function getSearch() {
 }
 function getHash() {
 }
+
+
+/***/ }),
+
+/***/ "./src/template.ts":
+/*!*************************!*\
+  !*** ./src/template.ts ***!
+  \*************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+
 
 
 /***/ }),
@@ -461,7 +525,7 @@ function hatch(element, remove) {
         element.remove();
     return children;
 }
-function render(HTML, element, insertAfter, append, disableDF) {
+function render(HTML, element, insertAfter, append) {
     if (element.parentElement === null)
         _index__WEBPACK_IMPORTED_MODULE_0__.generic.EE("cannot render by '<html>' element, since it's root of document.");
     var html = [];
@@ -658,17 +722,17 @@ __webpack_require__.r(__webpack_exports__);
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-/*!*******************************!*\
-  !*** ./src/dynamic.export.ts ***!
-  \*******************************/
+/*!*************************************!*\
+  !*** ./src/dynamic.defineGlobal.ts ***!
+  \*************************************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _dynamic__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./dynamic */ "./src/dynamic.ts");
+/* harmony import */ var _dynamic_export__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./dynamic.export */ "./src/dynamic.export.ts");
 
 Object.defineProperty(window, "Dynamic", {
     configurable: false,
     writable: false,
     enumerable: true,
-    value: _dynamic__WEBPACK_IMPORTED_MODULE_0__["default"]
+    value: _dynamic_export__WEBPACK_IMPORTED_MODULE_0__["default"]
 });
 
 })();

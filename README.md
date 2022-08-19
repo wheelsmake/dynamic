@@ -14,10 +14,14 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 
 学习新的语法是恼人的，所以 dynamic 在设计时秉持尽量使用基本 HTML 和 JavaScript 语法的原则，尽量少开发领域特定语言。
 
-与 dynamic 的**全部交互**（包括 HTML 模板的书写）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有两个：
+与 dynamic 的**全部交互**（包括 HTML 模板）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有两个：
 
 - 插入属性：冒号加下划线 `:_ _:`。
+  - 对应的 JavaScript 方法是 [`Dynamic.new().addExport()`](#addExport())。
+
 - 规避浏览器和 IDE 对元素 `attributes` 的检查：在属性后加 `:`，如 `id:=":_dynamicID_:"` 可规避 URL 中 `#` 带来的路由问题。
+  - 对应的 JavaScript 方法与第一点相同。
+
 
 ## 弱化 vDOM
 
@@ -31,7 +35,7 @@ dynamic 强依赖于 DOM 的不变性。开发者**不能**绕过 dynamic 控制
 
 ## 以网页应用为目标
 
-因此 dynamic 内置了 SPA 路由和 manifest.json 动态生成。ServiceWorker 因不支持动态生成，被放在了 [`sw`](//github.com/wheelsmake/sw) 仓库中。
+因此 dynamic 内置了 SPA 路由和 `manifest.json` 动态生成。ServiceWorker 因不支持动态生成，被放在了 [`sw`](//github.com/wheelsmake/sw) 仓库中。
 
 ## 不依赖开发环境
 
@@ -39,9 +43,12 @@ dynamic 强依赖于 DOM 的不变性。开发者**不能**绕过 dynamic 控制
 
 ## 像 Vue，但不是 Vue
 
-dynamic在很多地方很像 Vue 3，包括使用 `Proxy` 进行属性代理、HTML DOM 上的 `:` 语法、HTML 字符串插值；
+dynamic 像 Vue 3 的地方包括使用 `Proxy` 进行属性代理、HTML DOM 上的 `:` 语法、HTML 字符串插值，但它其实与 Vue 有很大区别：
 
-它又**完全不是** Vue：dynamic **没有计算属性的概念**，将属性赋值为一个函数即可立即将其转换为「计算」属性，反之可立即将其转换为普通属性；没有繁多的 HTML 指令；dynamic 的绝大多数 API 都不是声明式的；最后，dynamic 是针对网页应用开发而开发的框架。
+1. dynamic 没有计算属性的概念，将属性赋值为一个函数即可立即将其转换为「计算」属性，反之可立即将其转换为普通属性。
+2. dynamic 没有 Vue 众多的 HTML 模板指令，并且不允许在 HTML 字符串插值中使用 JavaScript 表达式，只允许单纯属性。
+3. dynamic 的绝大多数 API 都不是声明式的，并且创建实例时传入的参数与 Vue 大相径庭。
+4. dynamic 是针对网页应用开发而开发的框架，它在理念上将整个网页视为一个整体；而 Vue 的设计更易于开发弹性的、模块化（组件化）的网站，属于通用框架。
 
 # 开始使用
 
@@ -59,24 +66,31 @@ dynamic在很多地方很像 Vue 3，包括使用 `Proxy` 进行属性代理、H
 克隆仓库或下载仓库，然后在你的代码中导入 `Dynamic`。
 
 ```typescript
-import Dynamic from "path/to/dynamic.ts";
+import Dynamic from "path/to/dynamic.export.ts";
 ```
 
-注意不要使用 `dynamic.export.ts` 而要使用 `dynamic.ts`。
+注意不要使用 `dynamic.defineGlobal.ts` 而要使用 `dynamic.export.ts`。
 
-## API 摘要（与 Vue 对比）
+## 简介（类比 Vue）
 
-探索 dynamic 和 Vue 如何实现同样的应用。
+通过使用 dynamic 和 Vue 实现同样的应用来帮助你理解 dynamic 的理念和工作原理。
 
-如果你对 Vue 不熟悉，那么可以跳过这里，浏览下文的[教程](#教程)。
+> **Info** 提示
+>
+> 由于 dynamic 的设计与 Vue 较相似，下文会将 Vue 和 dynamic 进行**直接类比**。
+>
+> 此举目的在于通过将 dynamic 类比到 Vue 这个有名且被许多人学习过的框架以帮助你理解和学习 dynamic。**请不要因此对两者进行恶意比较、评判或引发消极讨论**，这里是 `Github`，不是 ~~`weibo`~~。
+>
+> 如果你对 Vue 不熟悉，那么可以跳过这里去浏览下文的[教程](#教程)。
 
-这是一个 Vue 应用：（请忽视日期计算中的明显逻辑问题）
+这是一个 Vue 应用：（请忽视日期处理逻辑中的明显问题）
 
 ```html
 <div id="app">
     <div>
-        <ul v-for="item in list"></ul>
+        <ul><li v-for="item in list">{{item}}</li></ul>
         <input v-model="inputs" type="text" />
+        <p>{{inputs}}</p>
         <button @click="count++">Count: {{count}}</button>
     </div>
     <span>today is: {{date}}</span>
@@ -84,45 +98,79 @@ import Dynamic from "path/to/dynamic.ts";
 </div>
 ```
 
-使用 dynamic 实现：
+Vue 实现方式的 JavaScript：（选项式 API，因组合式 API 需要编译且与 dynamic 的设计不太相似）
+
+```javascript
+Vue.createApp({
+    data(){
+        return{
+            list: ["a","b","c"],
+            inputs: "",
+            count: 0,
+            date: new Date().getDate()
+        }
+    },
+    methods: {
+        processDate(){
+            if(this.date + 1 > 31) this.date = 1;
+            else this.date += 1;
+        }
+    }
+}).mount("#app");
+```
+
+使用 dynamic 实现这个应用：
 
 ```html
 <div id="app">
     <div>
         <ul>:_items_:</ul>
         <input value=":_inputs_:" type="text" />
+        <p>:_inputs_:</p>
         <button onclick="this.data.count++">Count: :_count_:</button>
     </div>
     <span>today is: :_date_:</span>
     <button onclick="processDate(this.data)">tomorrow (date: :_tomorrowDate_:)</button>
-    <button onclick="this.processDate()">tomorrow (date: :_tomorrowDate_:)</button>
+    <button onclick="this.method.processDate()">tomorrow (date: :_tomorrowDate_:)</button>
 </div>
 ```
 
-相应的 JavaScript：
+dynamic 实现方式的 JavaScript：
 
 ```javascript
-const dy = new Dynamic("#app");
+const dy = Dynamic.new("#app");
+const list = ["a","b","c"];
 dy.data.items = function(){
-    
+    const result = [];
+    for(let i = 0; i < list.length; i++){
+        const el = document.createElement("li");
+        el.textContent = list[i];
+        result.push(el);
+    }
+    return result;
 };
 dy.data.inputs = "";
+dy.data.count = 0;
+dy.data.date = new Date().getDate();
+dy.data.tomorrowDate = function(){
+    if(this.date + 1 > 31) return 1;
+    else return this.date + 1;
+};
 function processDate(data){
     if(data.date + 1 > 31) data.date = 1;
     else data.date += 1;
 }
 dy.addMethods({
     processDate(){
-    	if(this.date + 1 > 31) this.date = 1;
-    	else this.date += 1;
+        if(this.date + 1 > 31) this.date = 1;
+        else this.date += 1;
     }
 });
-
 ```
 
-你可能已经有所疑惑。下文将逐语句解释这些 JavaScript，你也可以跳过这里，直接浏览下文的[教程](#教程)。
+你可能已经有所疑惑。下文将逐语句解释这些 HTML 和 JavaScript，你也可以跳过这里，直接浏览下文的[教程](#教程)。
 
-//todo: 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id="::ex::"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
+//todo: 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id=":_dynamicID_:"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
 
 # 教程
 
@@ -152,11 +200,42 @@ const dy = Dynamic.new(/*Element或css 选择符*/);
 
 //todo:
 
+# 不要做的事项
+
+## 不要修改 DOM
+
+dynamic **强依赖**于其作用域内 DOM 的不变性，也因此才可以实现弱化 vDOM 的目标。在创建了 dynamic 实例后，修改实例根节点下的任何 DOM 都可能导致不可预料的问题，包括但不限于判断失误、无法正确修改 DOM 内容、DOM 输出放置位置错误等。
+
+例子：
+
+```html
+<div id="el">
+    <p id="no">paragraph :_export_sth_:</p>
+</div>
+```
+
+```javascript
+var dy = Dynamic.new("#el");
+Dynamic.e("#no").innerText = "";
+```
+
+将某元素的 `innerText` 设为空字符串将立即移除其内部所有节点，导致 dynamic 无法找到要导出的节点。 
+
+- 一个元素内存在多个相邻文本节点时，在 `chromium` 开发者模式中手动编辑这些文本节点，会触发神奇的东西，只有最后一个文本节点会留下！
+
+## 不要向属性值传入非纯函数
+
+
+
+
+
+
+
 # API 指引 todo:
 
 ## 属性与数据绑定
 
-
+### addExport()
 
 ## 模板
 
@@ -172,17 +251,37 @@ const dy = Dynamic.new(/*Element或css 选择符*/);
 
 ## 工具方法
 
+### 获取元素
+
+> 从 [`luery`](//github.com/wheelsmake/luery) 处直接复制粘贴的代码。
+
+```typescript
+Dynamic.e(s :string, scope? :Element | Document) :Node | Node[];
+```
+
+|  参数   |                     描述                      |
+| :-----: | :-------------------------------------------: |
+|   `s`   |                  css 选择器                   |
+| `scope` | `querySelector` 的作用域，不填默认 `document` |
+
+仅当传入选择器的最终选择器为 ID 选择器（即 `#` ）且获取到元素时返回 `Node` 类型单个元素，否则返回  `Node[]` 类型。
+
 ### 直接渲染
 
-向文档中渲染任意 HTML。小心 XSS。
+向文档中渲染任意 HTML。
+
+> **Warning** 警告
+>
+> 向文档中动态渲染任意 HTML 是**非常危险**的，因为这很可能导致 XSS 攻击（跨站脚本攻击）！
+>
+> 请仅渲染**完全可信**的内容，**不要直接渲染**含有可由客户端提供的任何信息的 HTML！请先做好字符串转义！
 
 ```typescript
 Dynamic.render({
     HTML :string | Element | HTMLCollection | Element[] | Node | NodeList | Node[],
     element :Element,
     insertAfter? :boolean,
-    append? :boolean,
-    disableDF? :boolean
+    append? :boolean
 }) :Node[];
 ```
 
@@ -195,35 +294,7 @@ Dynamic.render({
 
 `insertAfter` 和 `append` 的共同缺省值是：在目标元素后插入 HTML。
 
-该方法返回一个由 Node 组成的 Array，包括传入的 HTML 字符串中的所有顶级元素。
-
-### 重复填充
-
-从单个对象获取重复填充该对象的数组。
-
-```typescript
-Dynamic.repeat()//todo:
-```
-
-|  参数   |      描述       |
-| :-----: | :-------------: |
-| `item`  |    填充对象     |
-| `count` | 次数，必须大于0 |
-
-### 获取元素
-
-> 从 [`luery`](//github.com/wheelsmake/luery) 处直接复制粘贴的代码。
-
-```typescript
-Dynamic.e(s :string, scope? :Element | Document) :Node[] | Node;
-```
-
-|  参数   |                     描述                      |
-| :-----: | :-------------------------------------------: |
-|   `s`   |                  css 选择器                   |
-| `scope` | `querySelector` 的作用域，不填默认 `document` |
-
-仅当传入选择器的最终选择器为 ID 选择器（即 `#` ）且获取到元素时返回 `Node` 类型单个元素，否则返回  `Node[]` 类型。
+该方法返回一个由 Node 组成的 Array，包括了 HTML 参数转换为真实 HTML 后的所有顶级元素。
 
 ### 字符串转 HTML
 
@@ -257,7 +328,7 @@ Dynamic.hatch(element :Element, remove? :boolean) :Node[];
 任何对已渲染 DOM 的操作都是比较耗时的，特别是那些会触发重排 / 重绘的操作。对此 dynamic 专门提供了一个优化方法，可以将很多 DOM 操作合并后：
 
 ```typescript
-dy.compose(()=>any) :Node[];
+Dynamic.compose//todo:
 ```
 
 | 参数 | 描述 |
@@ -271,7 +342,9 @@ dy.compose(()=>any) :Node[];
 
 ## 学习 dynamic
 
-可以前往 [`tests/`](tests) 和 [`sample_projects/`](sample_projects) 目录浏览其中的示例项目。
+可以前往 [`tests/`](tests) 和 [`sample_projects/`](sample_projects) 目录浏览其中的示例项目。其中包括了一些简单的项目和在本文中提到的各种项目的实际实现。
+
+不要拒绝阅读源码！dynamic 的源码还不到 500 行，并且其中还有 30% 是非常详细的注释。大多数疑点旁边都会有一个亲切的 `//` 来告诉你这是什么，因为我记不住为什么要这么写🤣。
 
 ## 开发环境搭建
 
@@ -471,7 +544,7 @@ dy.template.render({
 - 为避免 XSS，需要在 `<slot>` 中特别声明 `html` attribute 才能在模板变量中插入 HTML。插入的 HTML 中的 `<slot>` 无论如何都不会被转换，为了使 dynamic 的行为可预知，请**不要嵌套** `slot` **元素**。（TODO：处理嵌套slot）
 - 没有 `name` attribute 或没有提供与其 `name` attribute 一致的变量内容的 `<slot>` 会被直接转换为文本节点。所以，`<slot>` 若含有内部内容（如上文的 `#slot2`），则其将成为缺省值，在没有提供该 `<slot>` 的变量值而使用模板时将会使用该值。
 - 拥有相同 `name` attribute 的 `<slot>` 在提供了相应 `name` 的值时将共享这一值。
-- 当传入的内容为 `undefined`（`typeof undefined`，`void 0`）时，dynamic 会选择性忽略该 `<slot>`，有利于便捷地书写渲染方法。
+- 当传入的内容为 `undefined`（`typeof undefined`）时，dynamic 会选择性忽略该 `<slot>`。
 
 释放带模板变量的模板：
 
@@ -485,7 +558,7 @@ dy.template.render({
 
 - 不需要注意书写顺序。dynamic 会自动将模板中的变量与元素中赋值的模板变量进行比对并插入。
 - 模板中无此 `name` 或不具名的 `<slot>` 将被直接丢弃。
-- 当传入的内容为 `undefined`时，dynamic 不会忽略该 `<slot>`，因为它的类型是 `string`。不可能在 HTML 中写出真正的 `undefined` 类型。
+- 当传入的内容为 `undefined` 时，dynamic 不会忽略该 `<slot>`，因为它的类型是 `string`。不可能在 HTML 文本中写出真正的 `undefined` 类型。
 
 ## 其他操作
 

@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0,shrink-to-fit=no"/>
+        <title>dynamic test</title>
+    </head>
+    <body>
+        <div id="app">
+            <div>
+                <ul>:_items_:</ul>
+                <input value=":_inputs_:" type="text" />
+                <p>:_inputs_:</p>
+                <button onclick="this.data.count++">Count: :_count_:</button>
+            </div>
+            <span>today is: :_date_:</span>
+            <button onclick="processDate(this.data)">tomorrow (date: :_tomorrowDate_:)</button>
+            <button onclick="this.method.processDate()">tomorrow (date: :_tomorrowDate_:)</button>
+        </div>
+    </body>
+    <script>__dn_DEV__ = true;</script>
+    <script src="../../dist/dynamic.js"></script>
+    <script src="dy.js"></script>
+</html>

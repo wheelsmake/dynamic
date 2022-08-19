@@ -8,7 +8,7 @@ module.exports = {
     plugins: [
         new utf8bom(true)
     ],
-    entry: "./src/dynamic.export.ts",
+    entry: "./src/dynamic.defineGlobal.ts",
     devtool: "source-map",
     output: {
         path: path.resolve(__dirname, "dist"),

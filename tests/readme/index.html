@@ -1,0 +1,22 @@
+﻿<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0,shrink-to-fit=no"/>
+        <title>dynamic test</title>
+    </head>
+    <body>
+        <div id="app">
+            <div>
+                <ul><li v-for="item in list">{{item}}</li></ul>
+                <input v-model="inputs" type="text" />
+                <p>{{inputs}}</p>
+                <button @click="count++">Count: {{count}}</button>
+            </div>
+            <span>today is: {{date}}</span>
+            <button @click="processDate">tomorrow (date: {{date + 1 &lt;= 31 ? date + 1 : 1}})</button>
+        </div>
+    </body>
+    <script src="https://unpkg.com/vue@3.2.37/dist/vue.global.js"></script>
+    <script src="main.js"></script>
+</html>
