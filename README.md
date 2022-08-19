@@ -75,7 +75,7 @@ import Dynamic from "path/to/dynamic.export.ts";
 
 通过使用 dynamic 和 Vue 实现同样的应用来帮助你理解 dynamic 的理念和工作原理。
 
-> **Info** 提示
+> **Note** 提示
 >
 > 由于 dynamic 的设计与 Vue 较相似，下文会将 Vue 和 dynamic 进行**直接类比**。
 >
