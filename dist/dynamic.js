@@ -137,7 +137,7 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
             enumerable: true,
             get() { return data; }
         });
-        const attrs = node.attributes, children = Array.from(node.childNodes);
+        const attrs = Array.from(node.attributes), children = Array.from(node.childNodes);
         for (let i = 0; i < attrs.length; i++) {
             if (attrs[i].name.match(/^:_[a-zA-Z$_][\w$]*_:$/)) {
                 const property = attrs[i].name.substring(2, attrs[i].name.length - 2);
@@ -158,15 +158,22 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                     name = name.substring(0, name.length - 1);
                 var __addedByDynamic__;
                 if ((name == "value" || name == "checked")
-                    && node instanceof HTMLInputElement)
+                    && node instanceof HTMLInputElement
+                    && name in node)
                     __addedByDynamic__ = function () {
-                        if (node.hasOwnProperty(name)) {
-                        }
+                        node[name] = this[property];
                     };
-                else
+                else {
+                    if (node instanceof HTMLInputElement) {
+                        if (name == "defaultvalue" && "defaultValue" in node)
+                            name = "value";
+                        else if (name == "defaultchecked" && "defaultChecked" in node)
+                            name = "checked";
+                    }
                     __addedByDynamic__ = function () {
                         node.setAttribute(name, this[property]);
                     };
+                }
                 __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
                 _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__);
                 __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
@@ -184,8 +191,8 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                     const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
                     offsets.push(inserts[i].index);
                     properties.push(property);
-                    if (!(property in __classPrivateFieldGet(this, _App_data, "f")))
-                        __classPrivateFieldGet(this, _App_data, "f")[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData();
+                    if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
+                        __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
                 }
                 const NRproperties = _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(properties);
                 const __addedByDynamic__ = function () {

@@ -123,6 +123,7 @@ export default class App{
             }
         });
     }
+    //这两个必须使用#data得到完整的data实例
     addExport(dataProperty :string, func :exportFunc) :shouldExportA{return lUtils.data.addExport(this.#data[dataProperty], func);}
     removeExport(dataProperty :string, func :string | exportFunc) :shouldExportA{return lUtils.data.removeExport(this.#data[dataProperty], func);}
 //#endregion
@@ -154,9 +155,8 @@ export default class App{
                 enumerable: true,
                 get(){return data;}
             });
-
-            const attrs = node.attributes, children = Array.from(node.childNodes) as Node[];
-            //别写in，否则出一大堆方法，NameNodeMap可以用数组那套，NameNodeMap.length返回的是正确的长度
+            //fixed:Element.attributes是一个实时集合，而我们在循环中有删除元素，会导致缺陷for循环
+            const attrs = Array.from(node.attributes), children = Array.from(node.childNodes) as Node[];
             for(let i = 0; i < attrs.length; i++){
                 //#region 关于attribute与property的讨论
             /*important:fixed:-warning:对于某些attribute来说，它们本身只是一个默认值，想要获得真正的值需要访问节点的对应property！
@@ -198,7 +198,7 @@ export default class App{
                     //if(!(property in this.#data)) this.#data[property] = lUtils.data.createData();
 
                     //更新attribute的名称，值不改变；但是本质上是删除旧attribute，添加新attribute
-                    //fixme:因此必须需要一个参数，否则无从得知是哪个attribute
+                    //review:fixed:因此必须需要一个参数，否则无从得知是哪个attribute
                     const __addedByDynamic__ = function(this :anyObject, oldValue :any){ //参数里放this不影响函数的参数
                         const valueOfAttr = node.getAttribute(oldValue)!;
                         node.setAttribute(this[property], valueOfAttr);
@@ -216,26 +216,29 @@ export default class App{
                     //name变量用于将属性名转换为值类型，取消引用类型同步性
                     const property = attrs[i].value.substring(2, attrs[i].value.length - 2);
                     var name = attrs[i].name;
-
+                    //console.log(attrs[i]);
                     //将规避属性添加方法归化到正常方法
                     node.removeAttribute(name); //这个不会有任何问题，因为后面会立即set回去，如果带:会被set不带:的attr
                     if(name[name.length - 1] == ":") name = name.substring(0, name.length - 1);
-
-                    //添加尚未添加的属性，与下文引发导出过程的作用重复，不需要了
-                    //if(!(property in this.#data)) this.#data[property] = lUtils.data.createData();
-
                     var __addedByDynamic__ :exportFunc; //下面：参数里放this不影响函数的参数
-                    //特殊处理a/p。这里实际上只需要处理完全不能通过attribute做到的东西，class反而是不能通过property（因其名字不同）做到
+                    //特殊处理a/p。这里实际上只需要处理完全不能通过attribute做到的东西，class反而是不能通过property（因其名字不同）做到的
                     if(
                         (/*name == "class" || */name == "value" || name == "checked")
-                     && node instanceof HTMLInputElement //避免小天才把这俩属性写在其他元素上
+                     && node instanceof HTMLInputElement //避免其他元素上可能存在这些开发者自定义的属性，造成干扰
+                    //这个东西感觉也没啥作用，其实只是加个保险
+                     && name in node //检测是否存在对应property，似乎value真的在input的原型链上而不是它本身的属性
                     ) __addedByDynamic__ = function(this :anyObject){
-                        if(node.hasOwnProperty(name)){ //检测是否存在对应property，不要用in，检测仅限于它本身，不要扩展到奇怪的原型链
-                            
-                        }
+                        (node as anyObject)[name] = this[property];
                     }
-                    else __addedByDynamic__ = function(this :anyObject){
-                        node.setAttribute(name, this[property]);
+                    else{
+                        //处理对称情况
+                        if(node instanceof HTMLInputElement){
+                            if(name == "defaultvalue" && "defaultValue" in node) name = "value"; //快死了，乱转大写小写的
+                            else if(name == "defaultchecked" && "defaultChecked" in node) name = "checked";
+                        }
+                        __addedByDynamic__ = function(this :anyObject){
+                            node.setAttribute(name, this[property]);
+                        }
                     }
                     //这个用来引发一次导出过程，如果开发者没有赋值，那么:__:标识将变成undefined，反正不要留下标识
                     //这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
@@ -279,7 +282,8 @@ export default class App{
                         const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
                         offsets.push(inserts[i].index);
                         properties.push(property);
-                        if(!(property in this.#data)) this.#data[property] = lUtils.data.createData();
+                        //统一使用#proxy创建属性
+                        if(!(property in this.#proxy)) this.#proxy[property] = undefined; //this.#data[property] = lUtils.data.createData();
                     }
                     //if(offsets.length != properties.length) console.error(s[0], offsets, properties); //鬼片检验
                     //构造并记录export方法

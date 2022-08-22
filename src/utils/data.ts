@@ -4,12 +4,12 @@
 */
 import * as utils from "../../../utils/index";
 import * as lUtils from "../utils/index";
-export function createData(
-    value? :any,
+export function createData<T>(
+    value? :T,
     shouldUpdate? :string[],
     shouldExport? :((node? :Node)=>void)[]
-) :data{
-    const result :data = {
+) :data<T>{
+    const result :data<T> = {
         value,
         deleted: false,
         shouldUpdates: shouldUpdate ? shouldUpdate : [],
@@ -18,7 +18,7 @@ export function createData(
     if(isComputedProperty(result)) result.cache = undefined;
     return result;
 }
-export function addExport(dataInstance :data, func :exportFunc) :shouldExportA{
+export function addExport<T>(dataInstance :data<T>, func :exportFunc) :shouldExportA{
     const sE = dataInstance.shouldExports, funcString = func.toString();
     //检测函数是否是箭头函数，箭头函数拿不到this，一定会出错
     if(funcString.match(/^\([^\(\)]*\)[\s]*=>/)) utils.generic.E("func", "exportFunc", func, "export function must not be an arrow function");
@@ -29,7 +29,7 @@ export function addExport(dataInstance :data, func :exportFunc) :shouldExportA{
     else console.warn("Duplicated function", func, "is blocked being added to data", dataInstance);
     return sE;
 }
-export function removeExport(dataInstance :data, func :string | exportFunc) :shouldExportA{
+export function removeExport<T>(dataInstance :data<T>, func :string | exportFunc) :shouldExportA{
     const sE = dataInstance.shouldExports;
     if(typeof func == "string"){
         if(func == "__addedByDynamic__") utils.generic.E("func", "string | exportFunc", func, "this name is reserved");
@@ -42,7 +42,7 @@ export function removeExport(dataInstance :data, func :string | exportFunc) :sho
     return sE;
 }
 /**return typeof data.value == "function";*/
-export function isComputedProperty(data :data) :boolean{
+export function isComputedProperty<T>(data :data<T>) :boolean{
     return typeof data.value == "function";
 }
 export function pushCache(){
