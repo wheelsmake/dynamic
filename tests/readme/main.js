@@ -1,6 +1,7 @@
 ﻿Vue.createApp({
     data(){
         return{
+            className: "red",
             list: ["a","b","c"],
             inputs: "",
             count: 0,

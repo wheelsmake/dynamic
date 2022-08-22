@@ -87,7 +87,7 @@ import Dynamic from "path/to/dynamic.export.ts";
 
 ```html
 <div id="app">
-    <div>
+    <div :class="class">
         <ul><li v-for="item in list">{{item}}</li></ul>
         <input v-model="inputs" type="text" />
         <p>{{inputs}}</p>
@@ -104,6 +104,7 @@ Vue 实现方式的 JavaScript：（选项式 API，因组合式 API 需要编�
 Vue.createApp({
     data(){
         return{
+            class: "red",
             list: ["a","b","c"],
             inputs: "",
             count: 0,
@@ -123,7 +124,7 @@ Vue.createApp({
 
 ```html
 <div id="app">
-    <div>
+    <div classname>
         <ul>:_items_:</ul>
         <input value=":_inputs_:" type="text" />
         <p>:_inputs_:</p>

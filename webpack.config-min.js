@@ -12,7 +12,7 @@ module.exports = {
                         /*drop_console: true,
                         drop_debugger: false*/
                         //保留其他console
-                        pure_funcs:[
+                        pure_funcs: [
                             "console.log",
                             "console.info"
                         ]

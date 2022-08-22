@@ -7,7 +7,7 @@
     </head>
     <body>
         <div id="app">
-            <div>
+            <div :class="className">
                 <ul><li v-for="item in list">{{item}}</li></ul>
                 <input v-model="inputs" type="text" />
                 <p>{{inputs}}</p>

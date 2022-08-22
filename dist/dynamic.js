@@ -25,7 +25,7 @@ var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || 
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _App_instances, _App_rootNode, _App_data, _App_proxy, _App_initData, _App_methods, _App_processInsert, _App_observer, _App_shouldAnnounceAttrs, _App_observerCB, _App_registerOCB, _App_deleteOCB;
+var _App_instances, _App_rootNode, _App_data, _App_proxy, _App_initData, _App_methods, _App_processInsert, _App_observer, _App_shouldAnnounceAttrs, _App_registerOCB, _App_deleteOCB;
 
 
 console.info(`dynamic(dnJS) ©LJM12914. https://github.com/wheelsmake/dynamic
@@ -41,13 +41,16 @@ class App {
         _App_data.set(this, {});
         _App_proxy.set(this, {});
         _App_methods.set(this, {});
-        _App_observer.set(this, void 0);
+        _App_observer.set(this, new MutationObserver((records) => {
+            for (let i = 0; i < records.length; i++) {
+                console.log(records[i]);
+            }
+        }));
         _App_shouldAnnounceAttrs.set(this, []);
         __classPrivateFieldSet(this, _App_rootNode, _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode), "f");
         console.info("creating new dynamic instance with rootNode", rootNode);
         __classPrivateFieldGet(this, _App_instances, "m", _App_initData).call(this);
         __classPrivateFieldGet(this, _App_instances, "m", _App_processInsert).call(this, __classPrivateFieldGet(this, _App_rootNode, "f"));
-        __classPrivateFieldSet(this, _App_observer, new MutationObserver(__classPrivateFieldGet(this, _App_instances, "m", _App_observerCB)), "f");
         __classPrivateFieldGet(this, _App_observer, "f").observe(__classPrivateFieldGet(this, _App_rootNode, "f"), {
             attributes: true,
             attributeOldValue: true,
@@ -72,18 +75,12 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
     __classPrivateFieldSet(this, _App_proxy, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
         get(sharpData, property, proxy) {
             property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-            console.log("get", property);
             if (property in sharpData && !sharpData[property].deleted) {
                 var result;
                 if (typeof sharpData[property].value == "function")
                     result = (sharpData[property].value.bind(proxy))();
                 else
                     result = sharpData[property].value;
-                if (typeof result == "object")
-                    try {
-                        result = JSON.stringify(result);
-                    }
-                    catch { }
                 return result;
             }
             else if (!(property in sharpData))
@@ -95,7 +92,6 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
         },
         set(sharpData, property, newValue, proxy) {
             property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-            console.log("set", property, newValue);
             if (property in sharpData && !sharpData[property].deleted) {
                 if (typeof newValue == "function") {
                 }
@@ -108,9 +104,11 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                     (exports[i].bind(proxy))(oldValue);
             }
             else if (!(property in sharpData)) {
-                sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue, [], []);
-                if (_utils_index__WEBPACK_IMPORTED_MODULE_1__.data) {
+                if (typeof newValue == "function") {
                 }
+                else if (typeof newValue == "object") {
+                }
+                sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue, [], []);
             }
             else if (sharpData[property].deleted)
                 console.warn(`${s[1]}${property}.`);
@@ -141,25 +139,35 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
         });
         const attrs = node.attributes, children = Array.from(node.childNodes);
         for (let i = 0; i < attrs.length; i++) {
-            if (attrs[i].name.match(/:_[a-zA-Z$_][\w$]*_:/)) {
+            if (attrs[i].name.match(/^:_[a-zA-Z$_][\w$]*_:$/)) {
                 const property = attrs[i].name.substring(2, attrs[i].name.length - 2);
-                if (!(property in __classPrivateFieldGet(this, _App_data, "f")))
-                    __classPrivateFieldGet(this, _App_data, "f")[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData();
                 const __addedByDynamic__ = function (oldValue) {
                     const valueOfAttr = node.getAttribute(oldValue);
                     node.setAttribute(this[property], valueOfAttr);
                     node.removeAttribute(oldValue);
                 };
+                __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
                 _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__);
                 __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
             }
-            if (attrs[i].value.match(/:_[a-zA-Z$_][\w$]*_:/)) {
-                const property = attrs[i].value.substring(2, attrs[i].value.length - 2), name = attrs[i].name;
-                if (!(property in __classPrivateFieldGet(this, _App_data, "f")))
-                    __classPrivateFieldGet(this, _App_data, "f")[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData();
-                const __addedByDynamic__ = function () {
-                    node.setAttribute(name, this[property]);
-                };
+            if (attrs[i].value.match(/^:_[a-zA-Z$_][\w$]*_:$/)) {
+                const property = attrs[i].value.substring(2, attrs[i].value.length - 2);
+                var name = attrs[i].name;
+                node.removeAttribute(name);
+                if (name[name.length - 1] == ":")
+                    name = name.substring(0, name.length - 1);
+                var __addedByDynamic__;
+                if ((name == "value" || name == "checked")
+                    && node instanceof HTMLInputElement)
+                    __addedByDynamic__ = function () {
+                        if (node.hasOwnProperty(name)) {
+                        }
+                    };
+                else
+                    __addedByDynamic__ = function () {
+                        node.setAttribute(name, this[property]);
+                    };
+                __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
                 _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__);
                 __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
             }
@@ -182,11 +190,16 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                 const NRproperties = _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(properties);
                 const __addedByDynamic__ = function () {
                     var t = text;
-                    for (let i = 0; i < NRproperties.length; i++)
-                        t = t.replaceAll(`:_${NRproperties[i]}_:`, this[NRproperties[i]]);
+                    for (let i = 0; i < NRproperties.length; i++) {
+                        var data = this[NRproperties[i]];
+                        if (typeof data == "object")
+                            data = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data);
+                        t = t.replaceAll(`:_${NRproperties[i]}_:`, data);
+                    }
                     node.textContent = t;
                 };
                 for (let i = 0; i < NRproperties.length; i++) {
+                    __classPrivateFieldGet(this, _App_proxy, "f")[NRproperties[i]] = undefined;
                     _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_data, "f")[NRproperties[i]], __addedByDynamic__);
                     __classPrivateFieldGet(this, _App_proxy, "f")[NRproperties[i]] = undefined;
                 }
@@ -195,10 +208,6 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
     }
     else
         console.error(s[0], node);
-}, _App_observerCB = function _App_observerCB(records) {
-    for (let i = 0; i < records.length; i++) {
-        console.log(records[i]);
-    }
 }, _App_registerOCB = function _App_registerOCB() {
 }, _App_deleteOCB = function _App_deleteOCB() {
 };
@@ -258,6 +267,61 @@ const Dynamic = {
 };
 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.constantize(Dynamic);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dynamic);
+
+
+/***/ }),
+
+/***/ "./src/libs/cycle.ts":
+/*!***************************!*\
+  !*** ./src/libs/cycle.ts ***!
+  \***************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "decycle": () => (/* binding */ decycle)
+/* harmony export */ });
+/* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/index */ "./src/utils/index.ts");
+
+function decycle(object) {
+    const objects = new WeakMap();
+    return (function checkCycle(object, path) {
+        if (typeof object === "object"
+            && object !== null
+            && !(object instanceof Boolean)
+            && !(object instanceof Date)
+            && !(object instanceof Number)
+            && !(object instanceof RegExp)
+            && !(object instanceof String)) {
+            const prev_path = objects.get(object);
+            if (prev_path !== undefined && path.indexOf(prev_path) != -1)
+                return { $ref: prev_path };
+            else
+                objects.set(object, path);
+            if (object instanceof Array) {
+                const newObj = [];
+                for (let i = 0; i < object.length; i++)
+                    newObj[i] = checkCycle(object[i], path + "[" + i + "]");
+                return newObj;
+            }
+            else {
+                const newObj = {}, keys = Object.keys(object);
+                if (keys.length != 0)
+                    for (let i = 0; i < keys.length; i++)
+                        newObj[keys[i]] = checkCycle(object[keys[i]], path + "[" + JSON.stringify(keys[i]) + "]");
+                else {
+                    const toStringed = _utils_index__WEBPACK_IMPORTED_MODULE_0__.misc.compatibleToString(object);
+                    if (toStringed != "[object Object]")
+                        return object;
+                }
+                return newObj;
+            }
+        }
+        else
+            return object;
+    }(object, "$"));
+}
+;
 
 
 /***/ }),
@@ -394,10 +458,14 @@ function pushCache() {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "data": () => (/* reexport module object */ _data__WEBPACK_IMPORTED_MODULE_0__),
-/* harmony export */   "misc": () => (/* reexport module object */ _misc__WEBPACK_IMPORTED_MODULE_1__)
+/* harmony export */   "misc": () => (/* reexport module object */ _misc__WEBPACK_IMPORTED_MODULE_1__),
+/* harmony export */   "type": () => (/* reexport module object */ _type__WEBPACK_IMPORTED_MODULE_2__)
 /* harmony export */ });
 /* harmony import */ var _data__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./data */ "./src/utils/data.ts");
 /* harmony import */ var _misc__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./misc */ "./src/utils/misc.ts");
+/* harmony import */ var _type__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./type */ "./src/utils/type.ts");
+
+
 
 
 
@@ -414,15 +482,78 @@ __webpack_require__.r(__webpack_exports__);
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "advancedStringify": () => (/* binding */ advancedStringify),
+/* harmony export */   "compatibleToString": () => (/* binding */ compatibleToString),
 /* harmony export */   "eliminateSymbol": () => (/* binding */ eliminateSymbol)
 /* harmony export */ });
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../utils/index */ "../utils/index.ts");
+/* harmony import */ var _libs_cycle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../libs/cycle */ "./src/libs/cycle.ts");
+
 
 function eliminateSymbol(property) {
     if (typeof property == "symbol")
         _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E(property.toString(), "string", property, "index of Dynamic.data must not be a Symbol");
     return property;
 }
+const toString = Object.prototype.toString;
+function advancedStringify(input) {
+    if (typeof input != "object")
+        _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("input", "object", input);
+    if (input === null)
+        return "null";
+    else {
+        var result = "{";
+        const properties = Object.keys(input), toStringed = compatibleToString(input);
+        if (properties.length == 0) {
+            if (toStringed != "[object Object]")
+                return toStringed;
+            else
+                return "{}";
+        }
+        else {
+            const input_ = _libs_cycle__WEBPACK_IMPORTED_MODULE_1__.decycle(input);
+            for (let i = 0; i < properties.length; i++) {
+                const key = properties[i], value = input_[key], type = typeof value;
+                if (type == "undefined" || type == "number" || type == "boolean")
+                    addResult(value);
+                else if (type == "string")
+                    addResult(`"${value}"`);
+                else if (type == "bigint")
+                    addResult(value + "n");
+                else if (type == "symbol")
+                    addResult(value.toString());
+                else if (type == "function")
+                    addResult(compatibleToString(value));
+                else if (type == "object")
+                    addResult(advancedStringify(value));
+                if (i < properties.length - 1)
+                    result += ", ";
+                function addResult(input2) {
+                    result += `${key}: ${input2}`;
+                }
+            }
+            result += "}";
+            return result;
+        }
+    }
+}
+function compatibleToString(input2) {
+    return "toString" in input2 ? input2.toString() : toString.call(input2);
+}
+window.advancedStringify = advancedStringify;
+window.decycle = _libs_cycle__WEBPACK_IMPORTED_MODULE_1__.decycle;
+
+
+/***/ }),
+
+/***/ "./src/utils/type.ts":
+/*!***************************!*\
+  !*** ./src/utils/type.ts ***!
+  \***************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+
 
 
 /***/ }),

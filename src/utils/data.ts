@@ -3,7 +3,7 @@
  * Licensed under MIT License. https://github.com/wheelsmake/dynamic/blob/main/LICENSE
 */
 import * as utils from "../../../utils/index";
-import * as localUtils from "../utils/index";
+import * as lUtils from "../utils/index";
 export function createData(
     value? :any,
     shouldUpdate? :string[],
@@ -41,6 +41,7 @@ export function removeExport(dataInstance :data, func :string | exportFunc) :sho
     else utils.generic.E("func", "string | exportFunc", func);
     return sE;
 }
+/**return typeof data.value == "function";*/
 export function isComputedProperty(data :data) :boolean{
     return typeof data.value == "function";
 }
