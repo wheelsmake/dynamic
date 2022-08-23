@@ -25,15 +25,12 @@ var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || 
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _App_instances, _App_rootNode, _App_data, _App_proxy, _App_initData, _App_methods, _App_hydrate, _App_aOProcessorStore, _App_dOProcessorStore, _App_cOProcessorStore, _App_observer;
+var _App_instances, _App_rootNode, _App_aOProcessorStore, _App_dOProcessorStore, _App_cOProcessorStore, _App_observer, _App_data, _App_proxy, _App_initData, _App_methods, _App_hydrate;
 
 
 console.info(`dynamic(dnJS) ©LJM12914. https://github.com/wheelsmake/dynamic
 You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
-const s = [
-    "鬼片出现了！",
-    "Access to deleted property was blocked: "
-], HTMLDSLs = {
+const HTMLDSLs = {
     twoWayBinding: {
         leftBracket: "_:",
         rightBracket: ":_"
@@ -43,14 +40,15 @@ const s = [
         rightBracket: "-_"
     },
     attrAdditional: ":"
-}, twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}$`), oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}$`), nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}`, "g");
+}, twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}$`), oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}$`), nStwoWayBindingRegExp = new RegExp(`${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}`, "g"), nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}`, "g"), s = [
+    "鬼片出现了！",
+    "Access to deleted property was blocked: ",
+    ", automatically treated as one-way binding."
+];
 class App {
     constructor(rootNode) {
         _App_instances.add(this);
         _App_rootNode.set(this, void 0);
-        _App_data.set(this, {});
-        _App_proxy.set(this, {});
-        _App_methods.set(this, {});
         _App_aOProcessorStore.set(this, new WeakMap());
         _App_dOProcessorStore.set(this, new WeakMap());
         _App_cOProcessorStore.set(this, new WeakMap());
@@ -66,6 +64,9 @@ class App {
                     __classPrivateFieldGet(this, _App_cOProcessorStore, "f").get(record.target)(record);
             }
         }));
+        _App_data.set(this, {});
+        _App_proxy.set(this, {});
+        _App_methods.set(this, {});
         __classPrivateFieldSet(this, _App_rootNode, _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode), "f");
         console.info("creating new dynamic instance with rootNode", rootNode);
         __classPrivateFieldGet(this, _App_instances, "m", _App_initData).call(this);
@@ -80,11 +81,13 @@ class App {
         });
     }
     get rootNode() { return __classPrivateFieldGet(this, _App_rootNode, "f"); }
+    get dOProcessorStore() { return __classPrivateFieldGet(this, _App_dOProcessorStore, "f"); }
+    ;
     get data() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
     get _() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
-    get __DEV_data__() { return __classPrivateFieldGet(this, _App_data, "f"); }
     addExport(dataProperty, func, target) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[dataProperty], func, target); }
     removeExport(dataProperty, func) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.removeExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func); }
+    getExports(dataProperty) { return [...__classPrivateFieldGet(this, _App_data, "f")[dataProperty].shouldExportA]; }
     addMethods() {
     }
     removeMethods() {
@@ -96,7 +99,7 @@ class App {
             _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("node", undefined, node, "the input node must be a descendant of the rootNode");
     }
 }
-_App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_aOProcessorStore = new WeakMap(), _App_dOProcessorStore = new WeakMap(), _App_cOProcessorStore = new WeakMap(), _App_observer = new WeakMap(), _App_instances = new WeakSet(), _App_initData = function _App_initData() {
+_App_rootNode = new WeakMap(), _App_aOProcessorStore = new WeakMap(), _App_dOProcessorStore = new WeakMap(), _App_cOProcessorStore = new WeakMap(), _App_observer = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_instances = new WeakSet(), _App_initData = function _App_initData() {
     __classPrivateFieldSet(this, _App_proxy, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
         get(sharpData, property, proxy) {
             property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
@@ -168,16 +171,19 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
             get() { return data; }
         });
         const attrs = Array.from(node.attributes), children = Array.from(node.childNodes);
+        const tasks = [];
         for (let i = 0; i < attrs.length; i++) {
             let name = attrs[i].name, value = attrs[i].value;
-            if (name.match(twoWayBindingRegExp) || name.match(oneWayBindingRegExp)) {
-                if (name.match(twoWayBindingRegExp))
-                    console.warn(`It's not rational to declare a two-way binding attribute name: ${name}, automatically treated as one-way binding. Use "${HTMLDSLs.oneWayBinding.leftBracket}${name.substring(2, name.length - 2)}${HTMLDSLs.oneWayBinding.rightBracket}" instead.`);
-                if (value.match(twoWayBindingRegExp) || value.match(oneWayBindingRegExp))
-                    console.warn("Cannot set an attribute with both name and value dynamic. Dynamic will make only attribute name dynamic.");
-                const property = name.substring(2, name.length - 2);
+            const nameOne = !!name.match(oneWayBindingRegExp), nameTwo = !!name.match(twoWayBindingRegExp), valueOne = !!value.match(oneWayBindingRegExp), valueTwo = !!value.match(twoWayBindingRegExp), nameInserted = nameOne || nameTwo, valueInserted = valueOne || valueTwo;
+            let name_property, value_property, processed_avoidance_name, processed_avoidance_defaultTrap_name;
+            if (nameTwo)
+                console.warn(`It's not rational to declare a two-way binding attribute name: ${name}${s[2]} Use "${HTMLDSLs.oneWayBinding.leftBracket}${name.substring(2, name.length - 2)}${HTMLDSLs.oneWayBinding.rightBracket}" instead.`);
+            if (nameInserted && valueInserted)
+                console.warn("Cannot set an attribute with both name and value dynamic. Dynamic will make only attribute name dynamic.");
+            if (nameInserted) {
+                name_property = name.substring(2, name.length - 2);
                 const __addedByDynamic__ = function (exportInstance, oldValue) {
-                    const newValue = this[property];
+                    const newValue = this[name_property];
                     if (oldValue !== newValue) {
                         const thisNode = exportInstance[1], valueOfAttr = thisNode.getAttribute(oldValue);
                         thisNode.removeAttribute(oldValue);
@@ -188,67 +194,90 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                         }
                     }
                 };
-                node.removeAttribute(name);
-                if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
-                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
-                _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__, node);
-                node.setAttribute(__classPrivateFieldGet(this, _App_proxy, "f")[property], value);
+                if (!(name_property in __classPrivateFieldGet(this, _App_proxy, "f")))
+                    __classPrivateFieldGet(this, _App_proxy, "f")[name_property] = undefined;
+                _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[name_property], __addedByDynamic__, node);
             }
-            else if (value.match(twoWayBindingRegExp) || value.match(oneWayBindingRegExp)) {
-                const property = value.substring(2, value.length - 2);
-                node.removeAttribute(name);
+            else if (valueInserted) {
+                value_property = value.substring(2, value.length - 2);
                 if (name[name.length - 1] == HTMLDSLs.attrAdditional)
-                    name = name.substring(0, name.length - 1);
-                let name_default_processed = name, __addedByDynamic__;
-                if ((name_default_processed == "value" || name_default_processed == "checked")
+                    processed_avoidance_name = name.substring(0, name.length - 1);
+                else
+                    processed_avoidance_name = name;
+                let __addedByDynamic__;
+                if ((processed_avoidance_name == "value" || processed_avoidance_name == "checked")
                     && node instanceof HTMLInputElement
-                    && name_default_processed in node)
+                    && processed_avoidance_name in node)
                     __addedByDynamic__ = function (exportInstance, oldValue) {
-                        node[name_default_processed] = this[property];
+                        const newValue = this[value_property];
+                        if (oldValue !== newValue)
+                            node[processed_avoidance_name] = newValue;
                     };
                 else {
                     if (node instanceof HTMLInputElement) {
-                        if (name_default_processed == "defaultvalue" && "defaultValue" in node)
-                            name_default_processed = "value";
-                        else if (name_default_processed == "defaultchecked" && "defaultChecked" in node)
-                            name_default_processed = "checked";
+                        if (processed_avoidance_name == "defaultvalue" && "defaultValue" in node)
+                            processed_avoidance_defaultTrap_name = "value";
+                        else if (processed_avoidance_name == "defaultchecked" && "defaultChecked" in node)
+                            processed_avoidance_defaultTrap_name = "checked";
+                        else
+                            processed_avoidance_defaultTrap_name = processed_avoidance_name;
                     }
+                    else
+                        processed_avoidance_defaultTrap_name = processed_avoidance_name;
                     __addedByDynamic__ = function (exportInstance, oldValue) {
-                        const newValue = this[property];
+                        const newValue = this[value_property];
                         if (oldValue !== newValue) {
                             if (newValue === null)
-                                node.removeAttribute(name_default_processed);
+                                node.removeAttribute(processed_avoidance_defaultTrap_name);
                             else
-                                node.setAttribute(name_default_processed, newValue);
+                                node.setAttribute(processed_avoidance_defaultTrap_name, newValue);
                         }
                     };
                 }
-                if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
-                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
-                _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__, node);
-                node.setAttribute(name_default_processed, __classPrivateFieldGet(this, _App_proxy, "f")[property]);
-                if (value.match(twoWayBindingRegExp)) {
+                if (!(value_property in __classPrivateFieldGet(this, _App_proxy, "f")))
+                    __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = undefined;
+                _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[value_property], __addedByDynamic__, node);
+                if (valueTwo) {
                     if (node instanceof HTMLInputElement) {
                         if (name == "value") {
                             node.addEventListener("input", (e) => {
                                 if (e.target === node)
-                                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.value;
+                                    __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = node.value;
                             });
                         }
                         else if (name == "checked") {
                             node.addEventListener("input", (e) => {
                                 if (e.target === node)
-                                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.checked;
+                                    __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = node.checked;
                             });
                         }
                     }
                     else {
                         __classPrivateFieldGet(this, _App_aOProcessorStore, "f").set(node, (record) => {
-                            if (record.attributeName === name_default_processed
-                                && node.getAttribute(record.attributeName) !== __classPrivateFieldGet(this, _App_proxy, "f")[property])
-                                __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.getAttribute(record.attributeName);
+                            if (record.attributeName === processed_avoidance_defaultTrap_name
+                                && record.target.getAttribute(record.attributeName) !== __classPrivateFieldGet(this, _App_proxy, "f")[value_property])
+                                __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = record.target.getAttribute(record.attributeName);
                         });
                     }
+                }
+            }
+            if (nameInserted)
+                tasks.push([1, name, name_property, value]);
+            else if (valueInserted)
+                tasks.push([2, name, processed_avoidance_defaultTrap_name, value_property]);
+        }
+        for (let i = 0; i < tasks.length; i++) {
+            const taskInstance = tasks[i];
+            if (taskInstance[0] == 1) {
+                node.removeAttribute(taskInstance[1]);
+                node.setAttribute(__classPrivateFieldGet(this, _App_proxy, "f")[taskInstance[2]], taskInstance[3]);
+            }
+            else if (taskInstance[0] == 2) {
+                if (taskInstance[2] === undefined)
+                    node[taskInstance[1]] = __classPrivateFieldGet(this, _App_proxy, "f")[taskInstance[3]];
+                else {
+                    node.removeAttribute(taskInstance[1]);
+                    node.setAttribute(taskInstance[2], __classPrivateFieldGet(this, _App_proxy, "f")[taskInstance[3]]);
                 }
             }
         }
@@ -257,12 +286,34 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
     }
     else if (node instanceof Text) {
         if (node.textContent) {
-            const text = node.textContent, inserts = [...text.matchAll(nSoneWayBindingRegExp)];
-            if (inserts.length > 0) {
-                const offsets = [], properties = [], parent = node.parentNode, nextNode = node.nextSibling;
+            const text = node.textContent, twoWayInserts = [...text.matchAll(nStwoWayBindingRegExp)], inserts = [...text.matchAll(nSoneWayBindingRegExp), ...twoWayInserts], matchTwoWayBinding = text.match(twoWayBindingRegExp);
+            if (twoWayInserts.length > 0 && !matchTwoWayBinding)
+                console.warn(`Two-way bindings in "${text}" cannot be used in textContent template${s[2]}`);
+            if (matchTwoWayBinding) {
+                if (!(node.parentElement instanceof HTMLElement))
+                    console.warn("It's no use adding a two-way binding insert to an SVGElement, but dynamic will continue anyway.");
+                const property = text.substring(2, text.length - 2), parent = node.parentNode;
+                if (parent.childNodes.length == 1) {
+                    const __addedByDynamic__ = function () {
+                        if (parent.textContent !== this[property])
+                            parent.textContent = this[property];
+                    };
+                    if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
+                        __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
+                    _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__, node);
+                    parent.addEventListener("input", (e) => {
+                        if (e.target === parent && parent.textContent !== __classPrivateFieldGet(this, _App_proxy, "f")[property])
+                            __classPrivateFieldGet(this, _App_proxy, "f")[property] = parent.textContent;
+                    });
+                    node.textContent = __classPrivateFieldGet(this, _App_proxy, "f")[property];
+                }
+                else
+                    console.error("The parent element of a two-way binding text node must only have this text node.");
+            }
+            else if (inserts.length > 0) {
+                const properties = [], parent = node.parentNode, nextNode = node.nextSibling;
                 for (let i = 0; i < inserts.length; i++) {
                     const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
-                    offsets.push(inserts[i].index);
                     properties.push(property);
                     if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
                         __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
@@ -271,7 +322,7 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                 const __addedByDynamic__ = function (exportInstance) {
                     let t = text;
                     if (!document.contains(exportInstance[1])) {
-                        exportInstance[1] = document.createTextNode(text);
+                        exportInstance[1] = document.createTextNode(t);
                         parent.insertBefore(exportInstance[1], nextNode);
                     }
                     let thisNode = exportInstance[1];
@@ -279,19 +330,15 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                         let data = this[NRproperties[i]];
                         if (typeof data == "object")
                             data = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data);
-                        t = t.replaceAll(`${HTMLDSLs.oneWayBinding.leftBracket}${NRproperties[i]}${HTMLDSLs.oneWayBinding.rightBracket}`, data);
+                        t = t
+                            .replaceAll(`${HTMLDSLs.oneWayBinding.leftBracket}${NRproperties[i]}${HTMLDSLs.oneWayBinding.rightBracket}`, data)
+                            .replaceAll(`${HTMLDSLs.twoWayBinding.leftBracket}${NRproperties[i]}${HTMLDSLs.twoWayBinding.rightBracket}`, data);
                     }
-                    thisNode.textContent = t;
+                    if (thisNode.textContent !== t)
+                        thisNode.textContent = t;
                 };
-                for (let i = 0; i < NRproperties.length; i++) {
-                    if (!(NRproperties[i] in __classPrivateFieldGet(this, _App_proxy, "f")))
-                        __classPrivateFieldGet(this, _App_proxy, "f")[NRproperties[i]] = undefined;
+                for (let i = 0; i < NRproperties.length; i++)
                     _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[NRproperties[i]], __addedByDynamic__, node);
-                }
-            }
-            else if (text.match(twoWayBindingRegExp)) {
-                if (!(node.parentElement instanceof HTMLElement))
-                    console.warn("It's no use adding a two-way binding insert to an SVGElement, but dynamic will continue anyway.");
             }
         }
     }
@@ -517,11 +564,11 @@ function addExport(proxy, dataInstance, func, target) {
     if (isDuplicated)
         console.warn("Duplicated function", func, "is blocked being added to data", dataInstance);
     else {
-        const instance = [func, target];
-        sE.push(instance);
-        (func.bind(proxy))(instance, dataInstance.value);
+        const exportInstance = [func, target];
+        sE.push(exportInstance);
+        (func.bind(proxy))(exportInstance, dataInstance.value);
     }
-    return sE;
+    return [...sE];
 }
 function removeExport(dataInstance, func) {
     const sE = dataInstance.shouldExports;
@@ -541,7 +588,7 @@ function removeExport(dataInstance, func) {
                 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.precisePop(sE[i], sE);
             else
                 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("func", "string | exportFunc", func);
-    return sE;
+    return [...sE];
 }
 function isComputedProperty(data) {
     return typeof data.value == "function";

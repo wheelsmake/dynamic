@@ -1,4 +1,4 @@
-﻿const dy = Dynamic.new("#app");
+﻿const dy = new Dynamic("#app");
 const list = ["a","b","c"];
 dy.data.items = function(){
     const result = [];
@@ -9,6 +9,7 @@ dy.data.items = function(){
     }
     return result;
 };
+dy.data.class = "myClass";
 dy.data.inputs = "";
 dy.data.count = 0;
 dy.data.date = new Date().getDate();
@@ -20,9 +21,11 @@ function processDate(data){
     if(data.date + 1 > 31) data.date = 1;
     else data.date += 1;
 }
+/*或者这样
 dy.addMethods({
     processDate(){
         if(this.date + 1 > 31) this.date = 1;
         else this.date += 1;
     }
 });
+*/

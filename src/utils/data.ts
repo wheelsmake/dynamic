@@ -32,12 +32,14 @@ export function addExport<T>(proxy :anyObject, dataInstance :data<T>, func :expo
     }
     if(isDuplicated) console.warn("Duplicated function", func, "is blocked being added to data", dataInstance);
     else{
-        const instance :exportInstance = [func, target];
-        sE.push(instance);
+        const exportInstance :exportInstance = [func, target];
+        sE.push(exportInstance);
         //在这里会立即引发一次针对性的export，oldValue与现在的value相同
-        (func.bind(proxy))(instance, dataInstance.value);
+        //内置export方法大部分已经通过对比value和oldValue过滤掉了这次调用（但不能完全过滤）
+        (func.bind(proxy))(exportInstance, dataInstance.value);
     }
-    return sE;
+    //不要让外部获取真正的引用地址
+    return [...sE];
 }
 export function removeExport<T>(dataInstance :data<T>, func :string | exportFunc) :shouldExportA{
     const sE = dataInstance.shouldExports;
@@ -50,7 +52,8 @@ export function removeExport<T>(dataInstance :data<T>, func :string | exportFunc
     //由于添加了target，这里需要遍历数组
     else if(typeof func == "function") for(let i = 0; i < sE.length; i++) if(sE[i][0] === func) utils.generic.precisePop(sE[i], sE); //不是exportFunc没关系；precisePop已经处理了-1
     else utils.generic.E("func", "string | exportFunc", func);
-    return sE;
+    //不要让外部获取真正的引用地址
+    return [...sE];
 }
 /**return typeof data.value == "function";*/
 export function isComputedProperty<T>(data :data<T>) :boolean{

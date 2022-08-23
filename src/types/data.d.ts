@@ -3,9 +3,9 @@
  * Licensed under MIT License. https://github.com/wheelsmake/dynamic/blob/main/LICENSE
 */
 type exportFunc =
-//    ((this :anyObject)=>void)
-//  | ((this :anyObject, exportInstance :exportInstance)=>void)
-/*  | */((this :anyObject, exportInstance :exportInstance, oldValue :any)=>void);
+    ((this :anyObject)=>void)
+  | ((this :anyObject, exportInstance :exportInstance)=>void)
+  | ((this :anyObject, exportInstance :exportInstance, oldValue :any)=>void);
 type exportInstance = [exportFunc, Node | undefined];
 type shouldExportA = exportInstance[];
 type shouldUpdateA = string[];

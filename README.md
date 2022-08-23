@@ -32,7 +32,7 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 
 ### 自定义语法
 
-最关键的是，dynamic 支持将这些语法的标志进行自定义。任何掌握初级 JavaScript 并且会打开 [`app.ts`](src/app.ts#L20) 的开发者应该都会**修改** dynamic 的 DSL 语法配置。试着 [fork](//github.com/wheelsmake/dynamic/fork) 该项目后将这些符号改成你喜欢的吧！
+最关键的是，dynamic 支持将这些语法的标志进行自定义。任何掌握初级 JavaScript 并且会打开 [`app.ts`](src/app.ts#L15) 的开发者应该都会**修改** dynamic 的 DSL 语法配置。试着 [fork](//github.com/wheelsmake/dynamic/fork) 该项目后将这些符号改成你喜欢的吧！
 
 
 ## 弱化 vDOM
@@ -103,7 +103,7 @@ import Dynamic from "path/to/dynamic.export.ts";
 
 ```html
 <div id="app">
-    <div :class="class">
+    <div :class="className">
         <ul><li v-for="item in list">{{item}}</li></ul>
         <input v-model="inputs" type="text" />
         <p>{{inputs}}</p>
@@ -120,7 +120,7 @@ Vue 实现方式的 JavaScript：（选项式 API，因组合式 API 需要编�
 Vue.createApp({
     data(){
         return{
-            class: "red",
+            className: "myClass",
             list: ["a","b","c"],
             inputs: "",
             count: 0,
@@ -140,7 +140,7 @@ Vue.createApp({
 
 ```html
 <div id="app">
-    <div classname>
+    <div class="_-class-_">
         <ul>_-items-_</ul>
         <input value="_:inputs:_" type="text" />
         <p>_-inputs-_</p>
