@@ -39,13 +39,12 @@ function __enableDevTools__() :void{
 }
 
 //构造导出对象
-const Dynamic = {
-    //主方法
-    new(rootNode :Elementy) :App{return new App(rootNode);},
-    //引入
-    template,
-    spa,
-    manifest,
+function Dynamic(rootNode :Elementy){return new App(rootNode);}
+((obj :anyObject)=>{
+    for(let i in obj) (Dynamic as anyObject)[i] = obj[i];
+})({
+    //引入模块
+    template, spa, manifest,
     //工具方法
     e(s: string, scope?: Element | Document) :Node | Node[]{return utils.element.e(s, scope);},
     render(args :{
@@ -57,8 +56,9 @@ const Dynamic = {
     compose(){}, //todo:
     //hack
     __disableDevTools__,
-    __enableDevTools__
-};
+    __enableDevTools__,
+    constructor(){console.log("a");}
+});
 
 //导出
 utils.generic.constantize(Dynamic);

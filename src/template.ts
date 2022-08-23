@@ -7,3 +7,6 @@ import * as lUtils from "./utils/index";
 /*export default class Template{
     
 }*/
+export function register(){
+
+}

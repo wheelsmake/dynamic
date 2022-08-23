@@ -102,8 +102,10 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
             property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
             if (property in sharpData && !sharpData[property].deleted) {
                 let result;
-                if (typeof sharpData[property].value == "function")
-                    result = (sharpData[property].value.bind(proxy))();
+                if (_utils_index__WEBPACK_IMPORTED_MODULE_1__.data.isComputedProperty(sharpData[property])) {
+                    result = (sharpData[property].value.bind(proxy))(proxy);
+                    sharpData[property].value;
+                }
                 else
                     result = sharpData[property].value;
                 return result;
@@ -197,9 +199,7 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                 node.removeAttribute(name);
                 if (name[name.length - 1] == HTMLDSLs.attrAdditional)
                     name = name.substring(0, name.length - 1);
-                var name_default_processed = name;
-                let __addedByDynamic__;
-                console.log(name);
+                let name_default_processed = name, __addedByDynamic__;
                 if ((name_default_processed == "value" || name_default_processed == "checked")
                     && node instanceof HTMLInputElement
                     && name_default_processed in node)
@@ -337,19 +337,21 @@ function __enableDevTools__() {
     clearInterval = cI;
     clearInterval(dtInterval);
 }
-const Dynamic = {
-    new(rootNode) { return new _app__WEBPACK_IMPORTED_MODULE_1__["default"](rootNode); },
-    template: _template__WEBPACK_IMPORTED_MODULE_2__,
-    spa: _spa__WEBPACK_IMPORTED_MODULE_3__,
-    manifest: _manifest__WEBPACK_IMPORTED_MODULE_4__,
+function Dynamic(rootNode) { return new _app__WEBPACK_IMPORTED_MODULE_1__["default"](rootNode); }
+((obj) => {
+    for (let i in obj)
+        Dynamic[i] = obj[i];
+})({
+    template: _template__WEBPACK_IMPORTED_MODULE_2__, spa: _spa__WEBPACK_IMPORTED_MODULE_3__, manifest: _manifest__WEBPACK_IMPORTED_MODULE_4__,
     e(s, scope) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e(s, scope); },
     render(args) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.render(args.HTML, args.element, args.insertAfter, args.append); },
     toHTML(HTML) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.toHTML(HTML); },
     hatch(element, remove) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.hatch(element, remove); },
     compose() { },
     __disableDevTools__,
-    __enableDevTools__
-};
+    __enableDevTools__,
+    constructor() { console.log("a"); }
+});
 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.constantize(Dynamic);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dynamic);
 
@@ -466,7 +468,11 @@ function getHash() {
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "register": () => (/* binding */ register)
+/* harmony export */ });
+function register() {
+}
 
 
 /***/ }),
@@ -502,7 +508,7 @@ function addExport(proxy, dataInstance, func, target) {
     const sE = dataInstance.shouldExports, funcString = func.toString();
     if (funcString.match(/^\([^\(\)]*\)[\s]*=>/))
         _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("func", "exportFunc", func, "export function must not be an arrow function");
-    var isDuplicated = false;
+    let isDuplicated = false;
     for (let i = 0; i < sE.length; i++)
         if (sE[i][0] === func) {
             isDuplicated = true;
@@ -599,7 +605,7 @@ function advancedStringify(input) {
     if (input === null)
         return "null";
     else {
-        var result = "{";
+        let result = "{";
         const properties = Object.keys(input), toStringed = compatibleToString(input);
         if (properties.length == 0) {
             if (toStringed != "[object Object]")

@@ -18,7 +18,7 @@ export function advancedStringify(input :object) :string{
     //const patchList :[string[], string[], object[]] = [[], [], []];
     if(input === null) return "null"; //不要{}了
     else{
-        var result :string = "{";
+        let result :string = "{";
         //我们只对元素本身的、可枚举的属性进行提取，即Object.keys得到的东西。
         const properties = Object.keys(input), toStringed = compatibleToString(input);
         if(properties.length == 0){

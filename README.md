@@ -17,17 +17,22 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 与 dynamic 的**全部交互**（包括 HTML 模板）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有三个：
 
 - 插入单向绑定属性：下划线加横线 `_- -_`。
-  - 可以用 [`Dynamic.new().addExport()`](#addExport) 替代。
+  - 可以用 [`new Dynamic().addExport()`](#addExport) 替代。
 
 - 插入双向绑定属性：下划线加冒号 `_: :_`。
-  - 双向绑定的使用时机非常少，仅在表单元素或 DOM 编辑场景下有用。但是 dynamic 支持**所有合理的双向绑定**：attribute 的值和文本内容。对 attribute 的键名进行双向绑定是**不合理的**——dynamic 要怎么知道哪个 attribute 是之前那个呢？
+  - 双向绑定的使用时机非常少，仅在表单元素或 DOM 编辑场景下有用。但是 dynamic 支持对元素 attribute 的值和元素文本内容进行双向绑定。对 attribute 的键名进行双向绑定是**不合理的**——dynamic 要怎么知道哪个 attribute 是之前那个呢？
 
+> **Note** 提示
+>
+> 这两个语法可以这样记：外面都是下划线，只有一个（数据传输）方向的就只有一个（横），有两个（数据传输）方向的就有两个（点）。
 
-这两个语法可以这样记：外面都是下划线，只有一个方向的就只有一个（横），有两个方向的有两个（点）。还有一个和它们不同：
+还有一个和它们不同：
 
 - 规避浏览器和 IDE 对元素 `attributes` 的检查：在属性后加 `:`，如 `id:="_:dynamicID:_"` 可规避 URL 中 `#` 带来的路由问题。
 
-并且，任何掌握初级 JavaScript 语法并且会打开 [`app.ts`](src/app.ts#L20) 的开发者应该都会**修改** dynamic 的 DSL 配置。试着 [fork](//github.com/wheelsmake/dynamic/fork) 该项目后将这些符号改成你喜欢的吧！
+### 自定义语法
+
+最关键的是，dynamic 支持将这些语法的标志进行自定义。任何掌握初级 JavaScript 并且会打开 [`app.ts`](src/app.ts#L20) 的开发者应该都会**修改** dynamic 的 DSL 语法配置。试着 [fork](//github.com/wheelsmake/dynamic/fork) 该项目后将这些符号改成你喜欢的吧！
 
 
 ## 弱化 vDOM
@@ -36,9 +41,9 @@ dynamic 拥有 vDOM 功能，但它极少并仅会在很小的范围内打开 vD
 
 - dynamic 使用 [freeDOM](//github.com/wheelsmake/freeDOM) 作为 vDOM 库，这也是一个自制轮子。
 
-## 强接管 DOM
+## 强依赖 DOM
 
-dynamic 强依赖于 DOM 的不变性。开发者**不能**绕过 dynamic 控制 DOM，否则将带来不可预测的后果。
+dynamic 强依赖于 DOM 的不变性，这是弱化 vDOM 所带来的一个缺陷。开发者**不能**绕过 dynamic 控制 DOM，否则将带来不可预测的后果。
 
 ## 以网页应用为目标
 
@@ -59,7 +64,9 @@ dynamic 像 Vue 3 的地方包括使用 `Proxy` 进行属性代理、HTML DOM �
 
 # 开始使用
 
-## 从页面引入脚本
+## 获取 dynamic
+
+### 从页面引入脚本
 
 建议将 dynamic 置于所有脚本之前加载。
 
@@ -68,7 +75,7 @@ dynamic 像 Vue 3 的地方包括使用 `Proxy` 进行属性代理、HTML DOM �
 <script src="path/to/dynamic.min.js"></script><!--生产-->
 ```
 
-## 使用打包工具或 TypeScript 开发
+### 使用打包工具或 TypeScript 开发
 
 克隆仓库或下载仓库，然后在你的代码中导入 `Dynamic`。
 
@@ -78,7 +85,7 @@ import Dynamic from "path/to/dynamic.export.ts";
 
 注意不要使用 `dynamic.defineGlobal.ts` 而要使用 `dynamic.export.ts`。
 
-## 简介（类比 Vue）
+## 功能简介（类比 Vue）
 
 通过使用 dynamic 和 Vue 实现同样的应用来帮助你理解 dynamic 的理念和工作原理。
 
@@ -89,8 +96,10 @@ import Dynamic from "path/to/dynamic.export.ts";
 > 此举目的在于通过将 dynamic 类比到 Vue 这个有名且被许多人学习过的框架以帮助你理解和学习 dynamic。**请不要因此对两者进行恶意比较、评判或引发消极讨论**，这里是 `Github`，不是 ~~`weibo`~~。
 >
 > 如果你对 Vue 不熟悉，那么可以跳过这里去浏览下文的[教程](#教程)。
+>
+> - 请忽视日期处理逻辑中的明显问题。
 
-这是一个 Vue 应用：（请忽视日期处理逻辑中的明显问题）
+这是一个 Vue 应用：
 
 ```html
 <div id="app">
@@ -139,14 +148,15 @@ Vue.createApp({
     </div>
     <span>today is: _-date-_</span>
     <button onclick="processDate(this.data)">tomorrow (date: _-tomorrowDate-_)</button>
-    <button onclick="this.method.processDate()">tomorrow (date: _-tomorrowDate-_)</button>
+    <!--或者这样-->
+    <!--button onclick="this.method.processDate()">tomorrow (date: _-tomorrowDate-_)</button-->
 </div>
 ```
 
 dynamic 实现方式的 JavaScript：
 
 ```javascript
-const dy = Dynamic.new("#app");
+const dy = new Dynamic("#app");
 const list = ["a","b","c"];
 dy.data.items = function(){
     const result = [];
@@ -168,12 +178,14 @@ function processDate(data){
     if(data.date + 1 > 31) data.date = 1;
     else data.date += 1;
 }
+/*或者这样
 dy.addMethods({
     processDate(){
         if(this.date + 1 > 31) this.date = 1;
         else this.date += 1;
     }
 });
+*/
 ```
 
 你可能已经有所疑惑。下文将逐语句解释这些 HTML 和 JavaScript，你也可以跳过这里，直接浏览下文的[教程](#教程)。
@@ -199,7 +211,7 @@ dy.addMethods({
 ## 创建 dynamic 实例
 
 ```typescript
-const dy = Dynamic.new(/*Element或css 选择符*/);
+const dy = new Dynamic(/*Element或css 选择符*/);
 ```
 
 传入的唯一参数为根节点，根节点**也会**被该实例管理。
@@ -223,7 +235,7 @@ dynamic **强依赖**于其作用域内 DOM 的不变性，也因此才可以实
 ```
 
 ```javascript
-var dy = Dynamic.new("#el");
+var dy = new Dynamic("#el");
 Dynamic.e("#no").innerText = "";
 ```
 

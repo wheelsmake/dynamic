@@ -25,7 +25,7 @@ export function addExport<T>(proxy :anyObject, dataInstance :data<T>, func :expo
     if(funcString.match(/^\([^\(\)]*\)[\s]*=>/)) utils.generic.E("func", "exportFunc", func, "export function must not be an arrow function");
     //检测shouldExport里是不是已经有了完全相同的函数。很不幸，由于添加了target，我们需要手动遍历数组了
     //important:这里的函数还是原函数，不能bind，不然后面查重就失效了，我们等到用的时候再bind也不迟，并且分析函数还需要bind不同的东西
-    var isDuplicated = false;
+    let isDuplicated = false;
     for(let i = 0; i < sE.length; i++) if(sE[i][0] === func){
         isDuplicated = true;
         break;

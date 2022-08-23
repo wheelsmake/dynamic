@@ -26,7 +26,7 @@ const
             leftBracket: "_-",
             rightBracket: "-_"
         },
-        attrAdditional: ":" //这个玩意的位置配置不在这里，在#hydrate里面
+        attrAdditional: ":" //这个玩意的位置配置不在这里，在#hydrate里面，懒得提出来了
     },
     twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}$`),
     oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}$`),
@@ -74,8 +74,11 @@ export default class App{
                 //正常存在该属性
                 if(property in sharpData && !sharpData[property].deleted){
                     let result :any;
-                    //如果value是函数就先执行它，获得返回值，这是约定
-                    if(typeof sharpData[property].value == "function") result = (sharpData[property].value.bind(proxy))();
+                    //如果是“计算”属性就“计算”它，获得返回值
+                    if(lUtils.data.isComputedProperty(sharpData[property])){
+                        result = (sharpData[property].value.bind(proxy))(proxy);
+                        sharpData[property].value
+                    }
                     else result = sharpData[property].value;
                     //不要在这边优化object显示，这边是有啥输出啥！人家传一个object进来，你给他一个string回去？？？正确的方法是在textContent替换中写object！
                     return result;
@@ -252,8 +255,7 @@ export default class App{
                     //检测规避属性
                     if(name[name.length - 1] == HTMLDSLs.attrAdditional) name = name.substring(0, name.length - 1);
                     //不要再改动name了，后面要用没有处理过default的name变量
-                    var name_default_processed = name;
-                    let __addedByDynamic__ :exportFunc;console.log(name);
+                    let name_default_processed = name, __addedByDynamic__ :exportFunc;
                     //特殊处理a/p。这里实际上只需要处理完全不能通过attribute做到的东西，class反而是不能通过property（因其名字不同）做到的……
                     if(
                         (name_default_processed == "value" || name_default_processed == "checked")

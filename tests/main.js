@@ -1,4 +1,4 @@
-﻿var dy = Dynamic.new("#app");
+﻿var dy = new Dynamic("#app");
 dy.data.name = "dynamic";
 dy.data.op = function(){
     if(this.name === 1){
