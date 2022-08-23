@@ -5,14 +5,4 @@
 type functionObject = Record<string, Function>;
 type Elementy = Element | string;
 type dataObject = Record<string, data>;
-
-type exportFunc = (oldValue? :any)=>void;
-type shouldExportA = exportFunc[];
-type shouldUpdateA = string[];
-interface data<T>{
-    value :T | undefined | null;
-    cache? :T | undefined | null;
-    deleted :boolean;
-    shouldUpdates :shouldUpdateA;
-    shouldExports :shouldExportA;
-}
+type MRProcessorFn = (record :MutationRecord)=>void;

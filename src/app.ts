@@ -5,27 +5,44 @@
 import * as utils from "../../utils/index";
 import * as lUtils from "./utils/index";
 
-
 //开发模式
 console.info(
 `dynamic(dnJS) ©LJM12914. https://github.com/wheelsmake/dynamic
 You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
 
-
+const
 //字符串重用
-const s :string[] = [
-    "鬼片出现了！",
-    "Access to deleted property was blocked: "
-];
+    s :string[] = [
+        "鬼片出现了！",
+        "Access to deleted property was blocked: "
+    ],
+//HTML声明式语法设置（不喜欢目前语法的开发者可以fork后自己直接改动这里！）
+    HTMLDSLs = {
+        twoWayBinding :{
+            leftBracket: "_:",
+            rightBracket: ":_"
+        },
+        oneWayBinding :{
+            leftBracket: "_-",
+            rightBracket: "-_"
+        },
+        attrAdditional: ":" //这个玩意的位置配置不在这里，在#hydrate里面
+    },
+    twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}$`),
+    oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}$`),
+    //这个不使用
+    //nStwoWayBindingRegExp = new RegExp(`${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}`, "g"),
+    nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}`, "g");
 
 
 //主类
 export default class App{
+//#region 基本功能
     constructor(rootNode :Elementy){
         this.#rootNode = utils.arguments.reduceToElement(rootNode)!;
         console.info("creating new dynamic instance with rootNode", rootNode);
         this.#initData();
-        this.#processInsert(this.#rootNode);
+        this.#hydrate(this.#rootNode);
         //不用观察自己对DOM的修改
         this.#observer.observe(this.#rootNode, {
             attributes: true,
@@ -38,14 +55,16 @@ export default class App{
     }
     #rootNode :Element;
     get rootNode(){return this.#rootNode;}
+//#endregion
 
-//#region 属性数据
+//#region 数据管理
     #data :dataObject = {};
     //proxy虽然代理了#data这个dataObject，但它的表现其实就是一个典型的、完整的anyObject
     #proxy :anyObject = {};
     //proxy本身没有不可变性，必须再用一个data只读伪属性保护
     get data(){return this.#proxy;} //class内部不要引用这个data！内部为什么不直接引用#proxy呢？？？？？
     get _(){return this.#proxy;} //缩写
+    get __DEV_data__(){return this.#data;}
     #initData(){
         //note:sharpData === this.#data
         this.#proxy = new Proxy(this.#data, {
@@ -54,23 +73,18 @@ export default class App{
                 //console.log("get", property);
                 //正常存在该属性
                 if(property in sharpData && !sharpData[property].deleted){
-                    var result :any;
+                    let result :any;
                     //如果value是函数就先执行它，获得返回值，这是约定
                     if(typeof sharpData[property].value == "function") result = (sharpData[property].value.bind(proxy))();
                     else result = sharpData[property].value;
-                    //不要在这边优化object显示，这边是object输出！人家传一个object进来，你给他一个string回去？？？ //优化object显示，不要显示[object Object]；如果转换出错，那么result不会被更改，还是[object Object]
-                    //正确的方法是在textContent替换中写object
-                    //if(typeof result == "object") try{result = JSON.stringify(result);}catch{}
-
-                    //symbol不能隐式转换为字符串，浏览器会抛出错误，但是我们不应该吞掉开发者的错误，所以不用管它
-                    //else if(typeof result == "symbol")
+                    //不要在这边优化object显示，这边是有啥输出啥！人家传一个object进来，你给他一个string回去？？？正确的方法是在textContent替换中写object！
                     return result;
                 }
                 //不用创建属性！
                 else if(!(property in sharpData)) return undefined;
                 //该属性已被删除fixed:这个不能放在没有该属性前，reading undefined警告
                 else if(sharpData[property].deleted) console.warn(`${s[1]}${property}.`);
-                else console.error(s[0], "get", property); //不可能有else了
+                else console.error(s[0], "get", property); //不可能有else了……？
             },
             set(sharpData :dataObject, property :string | symbol, newValue :unknown, proxy :dataObject) :boolean{
                 property = lUtils.misc.eliminateSymbol(property);
@@ -87,13 +101,16 @@ export default class App{
                     }
                     const oldValue = sharpData[property].value;
                     sharpData[property].value = newValue;
-                    //更新依赖方法
-                    const exports = sharpData[property].shouldExports,
-                          updates = sharpData[property].shouldUpdates;
-                    for(let i = 0; i < updates.length; i++){
-                    
+                    if(oldValue !== newValue){ //要是前后相同，为什么还要更新呢？——嫖怪
+                        //更新依赖方法
+                        const exportInstances = sharpData[property].shouldExports, updates = sharpData[property].shouldUpdates;
+                        for(let i = 0; i < updates.length; i++){
+                            
+                        }
+                        for(let i = 0; i < exportInstances.length; i++){
+                            (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
+                        }
                     }
-                    for(let i = 0; i < exports.length; i++) (exports[i].bind(proxy))(oldValue);
                 }
                 //尚未有该属性，新建
                 else if(!(property in sharpData)){
@@ -103,14 +120,14 @@ export default class App{
                     else if(typeof newValue == "object"){
 
                     }
-                    sharpData[property] = lUtils.data.createData(newValue, [], []);
+                    sharpData[property] = lUtils.data.createData(newValue);
                 }
                 //该属性已被删除fixed:这个不能放在没有该属性前，reading undefined警告
                 else if(sharpData[property].deleted) console.warn(`${s[1]}${property}.`);
                 else console.error(s[0], "set", property); //不可能有else了
                 return true;
             },
-            //用has拦截in运算没必要，因其不会导致#data状态的改变
+            //用has拦截in运算没必要，因其不会导致#data状态的改变，并且in是可以完全正常使用的
             //Proxy的defineProperty只会在Object.defineProperty走到，别听MDN的
             //https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/defineProperty#:~:text=proxy.property%3D%27value%27
             //只要警告他们不要用Object.defineProperty往data里扔东西就好了
@@ -124,7 +141,7 @@ export default class App{
         });
     }
     //这两个必须使用#data得到完整的data实例
-    addExport(dataProperty :string, func :exportFunc) :shouldExportA{return lUtils.data.addExport(this.#data[dataProperty], func);}
+    addExport(dataProperty :string, func :exportFunc, target :Node) :shouldExportA{return lUtils.data.addExport(this.#proxy, this.#data[dataProperty], func, target);}
     removeExport(dataProperty :string, func :string | exportFunc) :shouldExportA{return lUtils.data.removeExport(this.#data[dataProperty], func);}
 //#endregion
 
@@ -139,8 +156,13 @@ export default class App{
 //#endregion
 
 //#region HTML声明式语法
-    parseHTML(node :Node) :void{this.#processInsert(node);}
-    #processInsert(node :Node) :void{
+    //外部访问
+    hydrate(node :Node) :void{
+        //不要扩展作用域
+        if(/*utils.element.isDescendant(node, this.#rootNode)*/this.#rootNode.contains(node)) this.#hydrate(node);
+        else utils.generic.E("node", undefined, node, "the input node must be a descendant of the rootNode");
+    }
+    #hydrate(node :Node) :void{
         if(node instanceof Element){
             //hack:超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
             //给作用域内每个元素的data和_都弄上这个data，然后只要this一下就出来了！
@@ -155,128 +177,140 @@ export default class App{
                 enumerable: true,
                 get(){return data;}
             });
-            //fixed:Element.attributes是一个实时集合，而我们在循环中有删除元素，会导致缺陷for循环
+            //fixed:Element.attributes是一个实时集合，而我们在循环中有删除元素，会导致缺陷for循环！
             const attrs = Array.from(node.attributes), children = Array.from(node.childNodes) as Node[];
             for(let i = 0; i < attrs.length; i++){
                 //#region 关于attribute与property的讨论
-            /*important:fixed:-warning:对于某些attribute来说，它们本身只是一个默认值，想要获得真正的值需要访问节点的对应property！
-            但是我们无法知道哪些attribute有这种阴间问题，到时候一味更新attribute没更新到property就没用了
-            目前看了看标准和文档，来试图真正说清楚这个。
-            我们将property/attribute组合叫pa组合。
-            我们将 $0[property] = x会导致$0.getAttribute("property") === x 称为 拥有完整的p->a同步。
-            我们将 $0.setAttribute("property", x)会导致$0[property] === x 称为 拥有完整的a->p同步。
-            我们将拥有完整的p->a同步和拥有完整的a->p同步称为完全双向同步，拥有两者中任一种称为单向同步。
-            如果存在同步，但property的值需要改变，那么称为非同名同步。
-            pa组合一共有以下几种：
-            1. 同名且完全双向同步，如accept。
-            2. 不同名且完全双向同步，如value(a)和defaultValue(p)。
-            3. 不同名且不可能双向同步，因为两边的格式不同，如style。但是这种情况下浏览器已经做好了转换，可以近似视作第二种。
-            由此可见pa组合一定存在双向同步，这和whatwg.org的标准是完全相符的。
-            但是可能名字不同。这个名字不同问题很大，因为有的只是kebab转camel，有的整个都变了，如value->defaultValue，class->className。
-            并且有的不同组合的a和p存在一次性的同步，这个“一次性”发生在第一次加载页面（Gecko和IE）或每次刷新页面（chromium）
-            例如value(a)和value(p)，它们不是一个组合（value(a)和defaultValue(p)才是一对的），一次性同步方向为value(a)->value(p)。
-            important:我们的目的是：能够做到属性值与data双向同步，即修改属性值会触发data修改且触发data should*事件，修改data触发属性值的修改。
-            那么，有一个很好玩的方案：data是典型的引用/代理类型，属性(p)是标准JavaScript属性，那为什么不直接把属性(p)改成data呢？
-            哦，不行，属性(p)本质上是一个使用getter和setter的伪属性，不能变成其他值。
-            还有方案：用observer监控DOM（就是最开始的“上传”实现策略）。
-            但是observer只能监测attributes，对于没有与attribute组合的property它无能为力了。
-            所以，真的要放弃了吗……
-            fixme:我们目前只能做到specific处理，general处理等我再想想。
-            特殊处理限于class、<input>中的value和checked。style不用。
-            参考链接：
-            https://javascript.info/dom-attributes-and-properties#:~:text=But%20there%20are%20exclusions%2C%20for%20instance%20input.value%20synchronizes%20only%20from%20attribute%20%E2%86%92%20to%20property%2C%20but%20not%20back%3A
-            https://stackoverflow.com/questions/57475325
-            https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#reflecting-content-attributes-in-idl-attributes
-            */
-            //#endregion
-                
-                //检查属性名和属性值，它们都要求全部是插值，不允许中途插值；important:todo:并且都需要双向绑定
-                if(attrs[i].name.match(/^:_[a-zA-Z$_][\w$]*_:$/)){
-                    const property = attrs[i].name.substring(2, attrs[i].name.length - 2);
-
-                    //添加尚未添加的属性，与下文引发导出过程的作用重复，不需要了
-                    //if(!(property in this.#data)) this.#data[property] = lUtils.data.createData();
-
-                    //更新attribute的名称，值不改变；但是本质上是删除旧attribute，添加新attribute
-                    //review:fixed:因此必须需要一个参数，否则无从得知是哪个attribute
-                    const __addedByDynamic__ = function(this :anyObject, oldValue :any){ //参数里放this不影响函数的参数
-                        const valueOfAttr = node.getAttribute(oldValue)!;
-                        node.setAttribute(this[property], valueOfAttr);
-                        node.removeAttribute(oldValue);
-                    }
-                    //这个用来引发一次导出过程，如果开发者没有赋值，那么:__:标识将变成undefined，反正不要留下标识
-                    //这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
-                    //需要先引发再添加export（reading undefined警告）
-                    this.#proxy[property] = undefined;
-                    lUtils.data.addExport(this.#data[property], __addedByDynamic__);
-                    //™还要再引发一次，不然export当时是没有的。怎么又写出了这种s**t代码啊！
-                    this.#proxy[property] = undefined;
+                /*important:fixed:-warning:对于某些attribute来说，它们本身只是一个默认值，想要获得真正的值需要访问节点的对应property！
+                但是我们无法知道哪些attribute有这种阴间问题，到时候一味更新attribute没更新到property就没用了
+                目前看了看标准和文档，来试图真正说清楚这个。
+                我们将property/attribute组合叫pa组合。
+                我们将 $0[property] = x会导致$0.getAttribute("property") === x 称为 拥有完整的p->a同步。
+                我们将 $0.setAttribute("property", x)会导致$0[property] === x 称为 拥有完整的a->p同步。
+                我们将拥有完整的p->a同步和拥有完整的a->p同步称为完全双向同步，拥有两者中任一种称为单向同步。
+                如果存在同步，但property的值需要改变，那么称为非同名同步。
+                pa组合一共有以下几种：
+                1. 同名且完全双向同步，如accept。
+                2. 不同名且完全双向同步，如value(a)和defaultValue(p)。
+                3. 不同名且不可能双向同步，因为两边的格式不同，如style。但是这种情况下浏览器已经做好了转换，可以近似视作第二种。
+                由此可见pa组合一定存在双向同步，这和whatwg.org的标准是完全相符的。
+                但是可能名字不同。这个名字不同问题很大，因为有的只是kebab转camel，有的整个都变了，如value->defaultValue，class->className。
+                并且有的不同组合的a和p存在一次性的同步，这个“一次性”发生在第一次加载页面（Gecko和IE）或每次刷新页面（chromium）
+                例如value(a)和value(p)，它们不是一个组合（value(a)和defaultValue(p)才是一对的），一次性同步方向为value(a)->value(p)。
+                important:我们的目的是：能够做到属性值与data双向同步，即修改属性值会触发data修改且触发data should*事件，修改data触发属性值的修改。
+                那么，有一个很好玩的方案：data是典型的引用/代理类型，属性(p)是标准JavaScript属性，那为什么不直接把属性(p)改成data呢？
+                哦，不行，属性(p)本质上是一个使用getter和setter的伪属性，不能变成其他值。
+                还有方案：用observer监控DOM（就是最开始的“上传”实现策略）。
+                但是observer只能监测attributes，对于没有与attribute组合的property它无能为力了。
+                所以，真的要放弃了吗……
+                fixme:我们目前只能做到specific处理，general处理等我再想想。
+                特殊处理限于class、<input>中的value和checked。style不用。
+                参考链接：
+                https://javascript.info/dom-attributes-and-properties#:~:text=But%20there%20are%20exclusions
+                https://stackoverflow.com/questions/57475325
+                https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#reflecting-content-attributes-in-idl-attributes
+                */
+                //#endregion
+                //检查属性名和属性值，它们都要求全部是插值，不允许中途插值；其中属性值支持双向绑定
+                let name = attrs[i].name, value = attrs[i].value; //???:这里不能用var，要用let？不同次for之间居然能共享变量？
+                if(name.match(twoWayBindingRegExp) || name.match(oneWayBindingRegExp)){
+                    //属性名双向绑定是不合理的，警告开发者
+                    if(name.match(twoWayBindingRegExp)) console.warn(`It's not rational to declare a two-way binding attribute name: ${name}, automatically treated as one-way binding. Use "${HTMLDSLs.oneWayBinding.leftBracket}${name.substring(2, name.length - 2)}${HTMLDSLs.oneWayBinding.rightBracket}" instead.`);
+                    //不允许双重动态attribute
+                    if(value.match(twoWayBindingRegExp) || value.match(oneWayBindingRegExp)) console.warn("Cannot set an attribute with both name and value dynamic. Dynamic will make only attribute name dynamic.");
+                    const property = name.substring(2, name.length - 2);
+                    //更新attribute的名称，值不改变；但是本质上是删除旧attribute，添加新attribute；因此必须需要一个参数，否则无从得知是哪个attribute
+                    const __addedByDynamic__ :exportFunc = function(this :anyObject, exportInstance :exportInstance, oldValue :string){ //参数里放this不影响函数的参数
+                        const newValue = this[property];
+                        if(oldValue !== newValue){
+                            const thisNode = exportInstance[1]! as Element,
+                            valueOfAttr = thisNode.getAttribute(oldValue)!;
+                            //要先删除，因为setAttribute可能会出错，出错了就会多一个attribute
+                            //出错后再次设置数据属性的值时，如果成功设置了attr，attr值也会是null，因为上次没有成功，旧的attr值直接没了，这完全符合预期！
+                            thisNode.removeAttribute(oldValue);
+                            if(newValue !== ""){
+                                //警告开（我）发（自）者（己）不要传大写字母进属性名
+                                if(typeof newValue == "string" && newValue !== newValue.toLowerCase()) console.warn(`Attribute names are case insensitive, don't pass string with upper-case letters which may cause bugs: ${newValue}`);
+                                thisNode.setAttribute(newValue, valueOfAttr);
+                            }
+                            //else ""不是有效的属性名称，所以我们将它视为属性被动态删除了
+                        }
+                        //else return; //值没有改变，直接返回
+                    };
+                    //很不幸，由于更新时有值改变的检测，并且必须通过值来确定set哪个attr，我们没法依靠export，必须自己上阵干掉标识
+                    node.removeAttribute(name); //删除旧value
+                    //如果开发者没有赋值，那么插值标识将留下undefined，反正不要留下标识。这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
+                    if(!(property in this.#proxy)) this.#proxy[property] = undefined; //创建属性
+                    //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    lUtils.data.addExport(this.#proxy, this.#data[property], __addedByDynamic__, node);
+                    node.setAttribute(this.#proxy[property], value); //将value搬迁到新的attribute中
                 }
-                if(attrs[i].value.match(/^:_[a-zA-Z$_][\w$]*_:$/)){
-                    //name变量用于将属性名转换为值类型，取消引用类型同步性
-                    const property = attrs[i].value.substring(2, attrs[i].value.length - 2);
-                    var name = attrs[i].name;
-                    //console.log(attrs[i]);
-                    //将规避属性添加方法归化到正常方法
-                    node.removeAttribute(name); //这个不会有任何问题，因为后面会立即set回去，如果带:会被set不带:的attr
-                    if(name[name.length - 1] == ":") name = name.substring(0, name.length - 1);
-                    var __addedByDynamic__ :exportFunc; //下面：参数里放this不影响函数的参数
-                    //特殊处理a/p。这里实际上只需要处理完全不能通过attribute做到的东西，class反而是不能通过property（因其名字不同）做到的
+                //如果name已经被处理了，那么就不处理value了，现在不允许双重动态attribute了
+                else if(value.match(twoWayBindingRegExp) || value.match(oneWayBindingRegExp)){ //其实双向绑定就是加了个补丁，可以一起
+                    const property = value.substring(2, value.length - 2);
+                    node.removeAttribute(name); //这个不会有任何问题，因为会立即set回去，如果带${HTMLDSLs.attrAdditional}会被set不带${HTMLDSLs.attrAdditional}的attr
+                    //检测规避属性
+                    if(name[name.length - 1] == HTMLDSLs.attrAdditional) name = name.substring(0, name.length - 1);
+
+                    //console.log(name);
+                    let __addedByDynamic__ :exportFunc;
+                    //特殊处理a/p。这里实际上只需要处理完全不能通过attribute做到的东西，class反而是不能通过property（因其名字不同）做到的……
                     if(
-                        (/*name == "class" || */name == "value" || name == "checked")
+                        (name == "value" || name == "checked")
                      && node instanceof HTMLInputElement //避免其他元素上可能存在这些开发者自定义的属性，造成干扰
-                    //这个东西感觉也没啥作用，其实只是加个保险
-                     && name in node //检测是否存在对应property，似乎value真的在input的原型链上而不是它本身的属性
-                    ) __addedByDynamic__ = function(this :anyObject){
+                     && name in node //这个东西感觉没啥作用，其实只是加个保险。检测是否存在对应property，似乎value真的在input的原型链上而不是它本身的属性
+                    ) __addedByDynamic__ = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
                         (node as anyObject)[name] = this[property];
                     }
                     else{
-                        //处理对称情况
+                        //处理上一个if过滤掉的对称情况
                         if(node instanceof HTMLInputElement){
-                            if(name == "defaultvalue" && "defaultValue" in node) name = "value"; //快死了，乱转大写小写的
+                            //快死了，乱转大写小写的
+                            if(name == "defaultvalue" && "defaultValue" in node) name = "value";
                             else if(name == "defaultchecked" && "defaultChecked" in node) name = "checked";
                         }
-                        __addedByDynamic__ = function(this :anyObject){
-                            node.setAttribute(name, this[property]);
+                        __addedByDynamic__ = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
+                            const newValue = this[property];
+                            if(oldValue !== newValue){
+                                //我们将null视为属性被动态删除了
+                                if(newValue === null) node.removeAttribute(name); //setAttribute删不掉
+                                else node.setAttribute(name, newValue);
+                            } 
+                            //else 值没有改变，直接返回
                         }
                     }
-                    //这个用来引发一次导出过程，如果开发者没有赋值，那么:__:标识将变成undefined，反正不要留下标识
-                    //这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
-                    //需要先引发再添加export（reading undefined警告）
-                    this.#proxy[property] = undefined;
-                    lUtils.data.addExport(this.#data[property], __addedByDynamic__);
-                    //™还要再引发一次，不然export当时是没有的。怎么又写出了这种s**t代码啊！
-                    this.#proxy[property] = undefined;
+                    //如果开发者没有赋值，那么插值标识将留下undefined，反正不要留下标识。这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
+                    if(!(property in this.#proxy)) this.#proxy[property] = undefined; //创建属性
+                    //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    lUtils.data.addExport(this.#proxy, this.#data[property], __addedByDynamic__, node);
+                    node.setAttribute(name, this.#proxy[property]); //在这里不会自动创建property！
+                    if(value.match(twoWayBindingRegExp)){ //打个双向同步补丁
+                        this.#aOProcessorStore.set(node, (record: MutationRecord)=>{
+                            if(
+                                record.attributeName === name
+                            //只有在attribute值和数据属性的值不一样的时候才需要同步，否则会导致无限同步
+                             && node.getAttribute(record.attributeName!) !== this.#proxy[property]
+                            ) this.#proxy[property] = node.getAttribute(record.attributeName!);
+                        });
+                    }
                 }
+                //else
             }
             //进入子节点
-            for(let i = 0; i < node.childNodes.length; i++) this.#processInsert(node.childNodes[i]);
+            for(let i = 0; i < children.length; i++) this.#hydrate(children[i]);
         }
-        else if(node instanceof Text){
-            //fixed:如果修改Element的textContent则会覆盖所有子元素，所以我们仅在文本节点上执行这边的代码
-
-            //fixme:但是文本节点（特别是空文本节点）很容易被浏览器乱扔，这个目前没想到好的方法
-            //note:已经验证：chromium和Gecko都会在一个文本节点textContent被清空后直接删除这个文本节点。
-            //所以要不我们手动hack它，要不提醒开发者
-            //如果hack的话，可行的方法是自动插入零宽字符，不过这样做显然会导致一些问题（如字数统计等）
-            //所以我们还是去提醒开发者吧，毕竟DOM编辑这个需求算是冷门需求。我也是被提醒的对象，因为造dynamic就是为了造oe。
-
-            //不修改innerText而是修改textContent，因为innerText会触发更多的浏览器绘制过程
-            //(可见local_tests/performance_test) 执行 for(let i=0;i<1000;i++){$0.innerText += "a"}
-            //innerText：144.42ms 每次都要触发一次重新计算样式——布局（强制自动重排）
-            //textContent：4.6ms 最后一次设置后再进行重新计算样式——布局
+        else if(node instanceof Text){ //fixed:如果修改Element的textContent则会覆盖所有子元素，所以我们仅在文本节点上执行这边的代码
             if(node.textContent){
-                const inserts = [...node.textContent.matchAll(/:_[a-zA-Z$_][\w$]*_:/g)];
-                //没有匹配到则为null，匹配到则[n]为:_example_:
+                //只有单向绑定支持模板，双向绑定是不支持的，必须全都是
+                const text = node.textContent, inserts = [...text.matchAll(nSoneWayBindingRegExp)];
+                //没有匹配到则为null，匹配到则[n]为${HTMLDSLs.oneWayBinding.leftBracket}example${HTMLDSLs.oneWayBinding.rightBracket}
                 if(inserts.length > 0){
-                    /*note:这里所做的事和一个字符串模板引擎没有什么区别。
-                     * 我们先确定这一段文字中所有的插入点在哪里；
-                     * 然后保存好这一段文字，更新时要用的；
-                     * 然后确定要使用哪些属性，给它们都添加新建的一个方法；
-                     * 这个新建的方法是一个标准的属性shouldExport方法，但是它被多个属性共用（这个不足为奇）；
-                     * 方法的具体内容是：收集所有需要的属性，用保存好的文字加上模板，然后塞回节点里；
-                     * 简单来说就是新建一个函数，塞语句和文字进去，把它记录成所有依赖属性的shouldExport方法*/
-                    const offsets = [], properties = [], text = node.textContent;
+                    //我们先确定这一段文字中所有需要的属性，然后保存好这一段文字，然后给这些属性添加export方法
+                    //方法的具体内容是收集所有需要的属性，用保存好的文字作模板进行逐个属性的替换，最后塞回节点里
+                    //fixed:note:已经验证：chromium和Gecko都会在一个文本节点textContent被清空后直接删除这个文本节点。
+                    //succeed:通过exportInstance参数和一大堆定位常量，我们成功实现了文本节点被删除后的精确重建+正常更新！
+                    const offsets = [], properties = [],
+                          parent = node.parentNode!, nextNode = node.nextSibling; //不可能没有parentNode！https://developer.mozilla.org/zh-CN/docs/Web/API/Node/parentNode#%E5%A4%87%E6%B3%A8
                     //收集数据并创建尚未创建的属性
                     for(let i = 0; i < inserts.length; i++){
                         const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
@@ -285,50 +319,67 @@ export default class App{
                         //统一使用#proxy创建属性
                         if(!(property in this.#proxy)) this.#proxy[property] = undefined; //this.#data[property] = lUtils.data.createData();
                     }
-                    //if(offsets.length != properties.length) console.error(s[0], offsets, properties); //鬼片检验
                     //构造并记录export方法
                     const NRproperties = utils.generic.noRepeat(properties);
-                    const __addedByDynamic__ = function(this :anyObject){ //参数里放this不影响函数的参数
-                        var t = text; //为了保证它是值类型，node.textContent是引用类型，会变
+                    const __addedByDynamic__ :exportFunc = function(this :anyObject, exportInstance :exportInstance){ //参数里放this不影响函数的参数
+                        let t = text; //为了保证它是值类型，node.textContent是引用类型，会变
+                        if(!document.contains(exportInstance[1]!)){ //弄一个新的文本节点出来，必定存在
+                            exportInstance[1] = document.createTextNode(text); //text是模板字符串，要用text才能replaceAll
+                            parent.insertBefore(exportInstance[1], nextNode);
+                        }
+                        let thisNode = exportInstance[1]!;
                         for(let i = 0; i < NRproperties.length; i++){
-                            var data = this[NRproperties[i]];
-                            //console.log(data);
+                            let data = this[NRproperties[i]];
                             //fixed:见initData()->Proxy->set
                             if(typeof data == "object") data = lUtils.misc.advancedStringify(data);
-                            t = t.replaceAll(`:_${NRproperties[i]}_:`, data);
+                            t = t.replaceAll(`${HTMLDSLs.oneWayBinding.leftBracket}${NRproperties[i]}${HTMLDSLs.oneWayBinding.rightBracket}`, data);
                         }
-                        node.textContent = t;
+                        //不修改innerText而是修改textContent，因为innerText会触发更多的浏览器绘制过程
+                        //测试：执行for(let i = 0;i < 1000; i++){$0.innerText += "a"}
+                        //innerText：144.42ms 每次都要触发一次重新计算样式——布局（强制自动重排）
+                        //textContent：4.6ms 最后一次设置后再进行重新计算样式——布局
+                        thisNode.textContent = t;
                     }
                     for(let i = 0; i < NRproperties.length; i++){
-                        //这个用来引发一次导出过程，如果开发者没有赋值，那么:__:标识将变成undefined，反正不要留下标识
-                        //这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
-                        //需要先引发再添加export（reading undefined警告）
-                        this.#proxy[NRproperties[i]] = undefined;
-                        lUtils.data.addExport(this.#data[NRproperties[i]], __addedByDynamic__);
-                        //™还要再引发一次，不然export当时是没有的。怎么又写出了这种s**t代码啊！
-                        this.#proxy[NRproperties[i]] = undefined;
+                        //数据属性流程。如果开发者没有赋值，那么插值标识将留下undefined，反正不要留下标识。这里是与Dynamic.new一样的同步操作，不存在覆盖开发者设置的值的问题！
+                        if(!(NRproperties[i] in this.#proxy)) this.#proxy[NRproperties[i]] = undefined; //创建属性
+                        //有可能是之前遍历的节点也插入了这个属性，我们不要随便赋值，只需要添加export即可，会自动引发的
+                        lUtils.data.addExport(this.#proxy, this.#data[NRproperties[i]], __addedByDynamic__, node);
                     }
                 }
-                //else
+                //textContent双向绑定
+                else if(text.match(twoWayBindingRegExp)){
+                    if( //fuck:我要爆粗口了！TS没十年脑溢血写不出来啊！你™parentElement返回类型HTMLElement？？？
+                        //有生之年我居然在判断HTMLElement instanceof HTMLElement！
+                        //并且ts还号称要平衡生产力和准确性，不修这个问题！2015年的老issue了https://github.com/microsoft/TypeScript/issues/4689#issuecomment-146324456
+                        !(node.parentElement! instanceof HTMLElement)
+                    ) console.warn("It's no use adding a two-way binding insert to an SVGElement, but dynamic will continue anyway.");
+                    //todo:
+                }
             }
-            //else
+            //else 一般不可能走到这浏览器就给你删了
         }
-        else console.error(s[0], node);
+        //else console.error(s[0], node); //这里没有鬼片，注释节点会走到这里
     }
 //#endregion
 
-//#region todo:DOM监控
+//#region DOM监控
+    //WeakMap：96.59%（2022.8.22）
+    #aOProcessorStore = new WeakMap<Element, MRProcessorFn>();
+    #dOProcessorStore = new WeakMap<Node, MRProcessorFn>();
+    #cOProcessorStore = new WeakMap<Element, MRProcessorFn>();
+    //简单的DOM监控回调机制，全看对面MRProcessorFn设计得如何
     #observer :MutationObserver = new MutationObserver((records :MutationRecord[])=>{
         for(let i = 0; i < records.length; i++){
-            console.log(records[i]);
+            const record = records[i], type = record.type;
+            console.log(record);
+            //既然有attribute那肯定是Element
+            if(type == "attributes" && this.#aOProcessorStore.has(record.target as Element)) this.#aOProcessorStore.get(record.target as Element)!(record);
+            else if(type == "characterData" && this.#dOProcessorStore.has(record.target)) this.#dOProcessorStore.get(record.target)!(record);
+            //既然有childList那肯定是Element
+            else if(type == "childList" && this.#cOProcessorStore.has(record.target as Element)) this.#cOProcessorStore.get(record.target as Element)!(record);
+            //else
         }
     });
-    #shouldAnnounceAttrs :[] = [];
-    #registerOCB(){
-
-    }
-    #deleteOCB(){
-
-    }
 //#endregion
 }

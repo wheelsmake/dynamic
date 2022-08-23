@@ -4,10 +4,11 @@ export default class App {
     get rootNode(): Element;
     get data(): anyObject;
     get _(): anyObject;
-    addExport(dataProperty: string, func: exportFunc): shouldExportA;
+    get __DEV_data__(): dataObject;
+    addExport(dataProperty: string, func: exportFunc, target: Node): shouldExportA;
     removeExport(dataProperty: string, func: string | exportFunc): shouldExportA;
     addMethods(): void;
     removeMethods(): void;
-    parseHTML(node: Node): void;
+    hydrate(node: Node): void;
 }
 //# sourceMappingURL=app.d.ts.map

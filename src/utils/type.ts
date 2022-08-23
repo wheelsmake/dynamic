@@ -3,4 +3,4 @@
  * Licensed under MIT License. https://github.com/wheelsmake/dynamic/blob/main/LICENSE
 */
 import * as utils from "../../../utils/index";
-import * as lUtils from "../utils/index";
+import * as lUtils from "./index";

@@ -14,13 +14,20 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 
 学习新的语法是恼人的，所以 dynamic 在设计时秉持尽量使用基本 HTML 和 JavaScript 语法的原则，尽量少开发领域特定语言。
 
-与 dynamic 的**全部交互**（包括 HTML 模板）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有两个：
+与 dynamic 的**全部交互**（包括 HTML 模板）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有三个：
 
-- 插入属性：冒号加下划线 `:_ _:`。
-  - 对应的 JavaScript 方法是 [`Dynamic.new().addExport()`](#addExport())。
+- 插入单向绑定属性：下划线加横线 `_- -_`。
+  - 可以用 [`Dynamic.new().addExport()`](#addExport()) 替代。
 
-- 规避浏览器和 IDE 对元素 `attributes` 的检查：在属性后加 `:`，如 `id:=":_dynamicID_:"` 可规避 URL 中 `#` 带来的路由问题。
-  - 对应的 JavaScript 方法与第一点相同。
+- 插入双向绑定属性：下划线加冒号 `_: :_`。
+  - 双向绑定的使用时机非常少，仅在表单元素或 DOM 编辑场景下有用。但是 dynamic 支持**所有合理的双向绑定**：attribute 的值和文本内容。对 attribute 的键名进行双向绑定是**不合理的**——dynamic 要怎么知道哪个 attribute 是之前那个呢？
+
+
+这两个语法可以这样记：外面都是下划线，只有一个方向的就只有一个（横），有两个方向的有两个（点）。还有一个和它们不同：
+
+- 规避浏览器和 IDE 对元素 `attributes` 的检查：在属性后加 `:`，如 `id:="_:dynamicID:_"` 可规避 URL 中 `#` 带来的路由问题。
+
+并且，任何掌握初级 JavaScript 语法并且会打开 [`app.ts`](src/app.ts#L20) 的开发者应该都会**修改** dynamic 的 DSL 配置。试着 [fork](//github.com/wheelsmake/dynamic/fork) 该项目后将这些符号改成你喜欢的吧！
 
 
 ## 弱化 vDOM
@@ -125,14 +132,14 @@ Vue.createApp({
 ```html
 <div id="app">
     <div classname>
-        <ul>:_items_:</ul>
-        <input value=":_inputs_:" type="text" />
-        <p>:_inputs_:</p>
-        <button onclick="this.data.count++">Count: :_count_:</button>
+        <ul>_-items-_</ul>
+        <input value="_:inputs:_" type="text" />
+        <p>_-inputs-_</p>
+        <button onclick="this.data.count++">Count: _-count-_</button>
     </div>
-    <span>today is: :_date_:</span>
-    <button onclick="processDate(this.data)">tomorrow (date: :_tomorrowDate_:)</button>
-    <button onclick="this.method.processDate()">tomorrow (date: :_tomorrowDate_:)</button>
+    <span>today is: _-date-_</span>
+    <button onclick="processDate(this.data)">tomorrow (date: _-tomorrowDate-_)</button>
+    <button onclick="this.method.processDate()">tomorrow (date: _-tomorrowDate-_)</button>
 </div>
 ```
 
@@ -171,7 +178,7 @@ dy.addMethods({
 
 你可能已经有所疑惑。下文将逐语句解释这些 HTML 和 JavaScript，你也可以跳过这里，直接浏览下文的[教程](#教程)。
 
-//todo: 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id=":_dynamicID_:"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
+//todo: 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id="_:dynamicID:_"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
 
 # 教程
 
@@ -211,7 +218,7 @@ dynamic **强依赖**于其作用域内 DOM 的不变性，也因此才可以实
 
 ```html
 <div id="el">
-    <p id="no">paragraph :_export_sth_:</p>
+    <p id="no">paragraph _:export_sth:_</p>
 </div>
 ```
 

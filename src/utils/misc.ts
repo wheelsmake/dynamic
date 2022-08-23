@@ -3,7 +3,7 @@
  * Licensed under MIT License. https://github.com/wheelsmake/dynamic/blob/main/LICENSE
 */
 import * as utils from "../../../utils/index";
-import * as lUtils from "../utils/index";
+import * as lUtils from "./index";
 import * as cycle from "../libs/cycle";
 export function eliminateSymbol(property :string | Symbol) :string{
     if(typeof property == "symbol") utils.generic.E(property.toString(), "string", property,  "index of Dynamic.data must not be a Symbol");
@@ -51,5 +51,3 @@ export function compatibleToString(input2 :object) :string{
     //typeof number™也不能in？？？那只能在前面兼容了
     return "toString" in input2 ? input2.toString() : toString.call(input2);
 }
-(window as any).advancedStringify = advancedStringify;
-(window as any).decycle = cycle.decycle;

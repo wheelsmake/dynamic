@@ -11,7 +11,8 @@ dy.data.op = function(){
         return null;
     }
 }
-dy._.styles = "background: beige";
+dy.data.yt = "title";
+dy.data.styles = "background: beige;";
 var n = {};
 n.a = n;
 dy.data.object = {
@@ -53,6 +54,7 @@ o1.a = o2;
 o2.a = o1;
 dy.data.object2 = o2;
 dy.data.count = 0;
+dy.data.dnValue = "";
 /*setInterval(()=>{
     if(dy._.name == "dynamic"){
         dy._.name = "timeNow:_Iamuseless_:" + new Date().getTime();
@@ -72,5 +74,5 @@ function updateTime(){
     else if(second.length == 1) se = `0${second}`;
     else se = second;
     dy.data.time = `${date.getHours()}:${date.getMinutes()}:${se}`;
-}
-//Dynamic.disableDevTool();*/
+}*/
+//Dynamic.disableDevTool();

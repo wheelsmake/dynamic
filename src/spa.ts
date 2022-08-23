@@ -17,6 +17,6 @@ export function getSearch() :SSkvObject | null{
     }
     else return null;
 }
-export function getHash(){
-    
+export function getHash() :string{
+    return location.hash.substring(1);
 }

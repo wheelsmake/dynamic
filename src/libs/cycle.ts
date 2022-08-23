@@ -1,15 +1,7 @@
-/* cycle.js
- * 2021-05-31
- * Public Domain.
- * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
- * This code should be minified before deployment.
- * See https://www.crockford.com/jsmin.html
- * USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO NOT CONTROL.
-*/
+/* cycle.js 2021-05-31 Public Domain. NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK. This code should be minified before deployment. See https://www.crockford.com/jsmin.html. USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO NOT CONTROL.*/
 /* library of dynamic
  * dynamic ©2022 LJM12914. https://github.com/wheelsmake/dynamic
  * Licensed under MIT License. https://github.com/wheelsmake/dynamic/blob/main/LICENSE
- * [edited]
 */
 import * as utils from "../../../utils/index";
 import * as lUtils from "../utils/index";
@@ -21,7 +13,7 @@ import * as lUtils from "../utils/index";
  * 
  * [NUMBER] or [STRING] indicates a child element or property.*/
 export function decycle(object :object) :object{
-    const objects = new WeakMap<object, string>(); //WeakMap：96.59%
+    const objects = new WeakMap<object, string>(); //WeakMap：96.59%（2022.8.22）
     return(function checkCycle(object :object, path :string){
         if( //过滤阴间object
             typeof object === "object"
