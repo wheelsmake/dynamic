@@ -197,40 +197,58 @@ _App_rootNode = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakM
                 node.removeAttribute(name);
                 if (name[name.length - 1] == HTMLDSLs.attrAdditional)
                     name = name.substring(0, name.length - 1);
+                var name_default_processed = name;
                 let __addedByDynamic__;
-                if ((name == "value" || name == "checked")
+                console.log(name);
+                if ((name_default_processed == "value" || name_default_processed == "checked")
                     && node instanceof HTMLInputElement
-                    && name in node)
+                    && name_default_processed in node)
                     __addedByDynamic__ = function (exportInstance, oldValue) {
-                        node[name] = this[property];
+                        node[name_default_processed] = this[property];
                     };
                 else {
                     if (node instanceof HTMLInputElement) {
-                        if (name == "defaultvalue" && "defaultValue" in node)
-                            name = "value";
-                        else if (name == "defaultchecked" && "defaultChecked" in node)
-                            name = "checked";
+                        if (name_default_processed == "defaultvalue" && "defaultValue" in node)
+                            name_default_processed = "value";
+                        else if (name_default_processed == "defaultchecked" && "defaultChecked" in node)
+                            name_default_processed = "checked";
                     }
                     __addedByDynamic__ = function (exportInstance, oldValue) {
                         const newValue = this[property];
                         if (oldValue !== newValue) {
                             if (newValue === null)
-                                node.removeAttribute(name);
+                                node.removeAttribute(name_default_processed);
                             else
-                                node.setAttribute(name, newValue);
+                                node.setAttribute(name_default_processed, newValue);
                         }
                     };
                 }
                 if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
                     __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
                 _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[property], __addedByDynamic__, node);
-                node.setAttribute(name, __classPrivateFieldGet(this, _App_proxy, "f")[property]);
+                node.setAttribute(name_default_processed, __classPrivateFieldGet(this, _App_proxy, "f")[property]);
                 if (value.match(twoWayBindingRegExp)) {
-                    __classPrivateFieldGet(this, _App_aOProcessorStore, "f").set(node, (record) => {
-                        if (record.attributeName === name
-                            && node.getAttribute(record.attributeName) !== __classPrivateFieldGet(this, _App_proxy, "f")[property])
-                            __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.getAttribute(record.attributeName);
-                    });
+                    if (node instanceof HTMLInputElement) {
+                        if (name == "value") {
+                            node.addEventListener("input", (e) => {
+                                if (e.target === node)
+                                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.value;
+                            });
+                        }
+                        else if (name == "checked") {
+                            node.addEventListener("input", (e) => {
+                                if (e.target === node)
+                                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.checked;
+                            });
+                        }
+                    }
+                    else {
+                        __classPrivateFieldGet(this, _App_aOProcessorStore, "f").set(node, (record) => {
+                            if (record.attributeName === name_default_processed
+                                && node.getAttribute(record.attributeName) !== __classPrivateFieldGet(this, _App_proxy, "f")[property])
+                                __classPrivateFieldGet(this, _App_proxy, "f")[property] = node.getAttribute(record.attributeName);
+                        });
+                    }
                 }
             }
         }

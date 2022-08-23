@@ -17,7 +17,7 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 与 dynamic 的**全部交互**（包括 HTML 模板）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有三个：
 
 - 插入单向绑定属性：下划线加横线 `_- -_`。
-  - 可以用 [`Dynamic.new().addExport()`](#addExport()) 替代。
+  - 可以用 [`Dynamic.new().addExport()`](#addExport) 替代。
 
 - 插入双向绑定属性：下划线加冒号 `_: :_`。
   - 双向绑定的使用时机非常少，仅在表单元素或 DOM 编辑场景下有用。但是 dynamic 支持**所有合理的双向绑定**：attribute 的值和文本内容。对 attribute 的键名进行双向绑定是**不合理的**——dynamic 要怎么知道哪个 attribute 是之前那个呢？

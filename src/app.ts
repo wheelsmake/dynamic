@@ -212,7 +212,7 @@ export default class App{
                 */
                 //#endregion
                 //检查属性名和属性值，它们都要求全部是插值，不允许中途插值；其中属性值支持双向绑定
-                let name = attrs[i].name, value = attrs[i].value; //???:这里不能用var，要用let？不同次for之间居然能共享变量？
+                let name = attrs[i].name, value = attrs[i].value; //???:这里不能用var？不同次for之间居然能共享var变量？
                 if(name.match(twoWayBindingRegExp) || name.match(oneWayBindingRegExp)){
                     //属性名双向绑定是不合理的，警告开发者
                     if(name.match(twoWayBindingRegExp)) console.warn(`It's not rational to declare a two-way binding attribute name: ${name}, automatically treated as one-way binding. Use "${HTMLDSLs.oneWayBinding.leftBracket}${name.substring(2, name.length - 2)}${HTMLDSLs.oneWayBinding.rightBracket}" instead.`);
@@ -251,30 +251,30 @@ export default class App{
                     node.removeAttribute(name); //这个不会有任何问题，因为会立即set回去，如果带${HTMLDSLs.attrAdditional}会被set不带${HTMLDSLs.attrAdditional}的attr
                     //检测规避属性
                     if(name[name.length - 1] == HTMLDSLs.attrAdditional) name = name.substring(0, name.length - 1);
-
-                    //console.log(name);
-                    let __addedByDynamic__ :exportFunc;
+                    //不要再改动name了，后面要用没有处理过default的name变量
+                    var name_default_processed = name;
+                    let __addedByDynamic__ :exportFunc;console.log(name);
                     //特殊处理a/p。这里实际上只需要处理完全不能通过attribute做到的东西，class反而是不能通过property（因其名字不同）做到的……
                     if(
-                        (name == "value" || name == "checked")
+                        (name_default_processed == "value" || name_default_processed == "checked")
                      && node instanceof HTMLInputElement //避免其他元素上可能存在这些开发者自定义的属性，造成干扰
-                     && name in node //这个东西感觉没啥作用，其实只是加个保险。检测是否存在对应property，似乎value真的在input的原型链上而不是它本身的属性
+                     && name_default_processed in node //这个东西感觉没啥作用，其实只是加个保险。检测是否存在对应property，似乎value真的在input的原型链上而不是它本身的属性
                     ) __addedByDynamic__ = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
-                        (node as anyObject)[name] = this[property];
+                        (node as anyObject)[name_default_processed] = this[property];
                     }
                     else{
                         //处理上一个if过滤掉的对称情况
                         if(node instanceof HTMLInputElement){
                             //快死了，乱转大写小写的
-                            if(name == "defaultvalue" && "defaultValue" in node) name = "value";
-                            else if(name == "defaultchecked" && "defaultChecked" in node) name = "checked";
+                            if(name_default_processed == "defaultvalue" && "defaultValue" in node) name_default_processed = "value";
+                            else if(name_default_processed == "defaultchecked" && "defaultChecked" in node) name_default_processed = "checked";
                         }
                         __addedByDynamic__ = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
                             const newValue = this[property];
                             if(oldValue !== newValue){
                                 //我们将null视为属性被动态删除了
-                                if(newValue === null) node.removeAttribute(name); //setAttribute删不掉
-                                else node.setAttribute(name, newValue);
+                                if(newValue === null) node.removeAttribute(name_default_processed); //setAttribute删不掉
+                                else node.setAttribute(name_default_processed, newValue);
                             } 
                             //else 值没有改变，直接返回
                         }
@@ -283,15 +283,31 @@ export default class App{
                     if(!(property in this.#proxy)) this.#proxy[property] = undefined; //创建属性
                     //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                     lUtils.data.addExport(this.#proxy, this.#data[property], __addedByDynamic__, node);
-                    node.setAttribute(name, this.#proxy[property]); //在这里不会自动创建property！
+                    node.setAttribute(name_default_processed, this.#proxy[property]); //在这里不会自动创建property！
                     if(value.match(twoWayBindingRegExp)){ //打个双向同步补丁
-                        this.#aOProcessorStore.set(node, (record: MutationRecord)=>{
-                            if(
-                                record.attributeName === name
-                            //只有在attribute值和数据属性的值不一样的时候才需要同步，否则会导致无限同步
-                             && node.getAttribute(record.attributeName!) !== this.#proxy[property]
-                            ) this.#proxy[property] = node.getAttribute(record.attributeName!);
-                        });
+                        //特别处理这几个东西，就是这里需要用到原始的name
+                        if(node instanceof HTMLInputElement){
+                            if(name == "value"){
+                                node.addEventListener("input", (e :Event)=>{
+                                    if(e.target === node) this.#proxy[property] = node.value;
+                                });
+                            }
+                            else if(name == "checked"){
+                                node.addEventListener("input", (e :Event)=>{
+                                    if(e.target === node) this.#proxy[property] = node.checked;
+                                });
+                            }
+                            //else if(name == "defaultValue") 不需要了，跟着下面去监听就行了
+                        }
+                        else{
+                            this.#aOProcessorStore.set(node, (record: MutationRecord)=>{
+                                if(
+                                    record.attributeName === name_default_processed
+                                //只有在attribute值和数据属性的值不一样的时候才需要同步，否则会导致无限同步
+                                 && node.getAttribute(record.attributeName!) !== this.#proxy[property]
+                                ) this.#proxy[property] = node.getAttribute(record.attributeName!);
+                            });
+                        }
                     }
                 }
                 //else

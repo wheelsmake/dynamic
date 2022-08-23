@@ -55,6 +55,7 @@ o2.a = o1;
 dy.data.object2 = o2;
 dy.data.count = 0;
 dy.data.dnValue = "";
+dy.data.deValue = "default value";
 /*setInterval(()=>{
     if(dy._.name == "dynamic"){
         dy._.name = "timeNow:_Iamuseless_:" + new Date().getTime();
