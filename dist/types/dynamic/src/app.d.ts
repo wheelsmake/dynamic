@@ -8,8 +8,8 @@ export default class App {
     addExport(dataProperty: string, func: exportFunc, target: Node): shouldExportA;
     removeExport(dataProperty: string, func: string | exportFunc): shouldExportA;
     getExports(dataProperty: string): shouldExportA;
-    addMethods(): void;
-    removeMethods(): void;
+    get methods(): functionObject;
+    get $(): functionObject;
     hydrate(node: Node): void;
 }
 //# sourceMappingURL=app.d.ts.map

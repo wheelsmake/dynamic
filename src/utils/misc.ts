@@ -46,8 +46,8 @@ export function advancedStringify(input :object) :string{
         }
     }
 }
-export function compatibleToString(input2 :object) :string{
+export function compatibleToString(input :object) :string{
     //typeof undefined不能in
     //typeof number™也不能in？？？那只能在前面兼容了
-    return "toString" in input2 ? input2.toString() : toString.call(input2);
+    return "toString" in input ? input.toString() : toString.call(input);
 }

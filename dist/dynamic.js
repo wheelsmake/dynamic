@@ -25,10 +25,11 @@ var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || 
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _App_instances, _App_rootNode, _App_aOProcessorStore, _App_dOProcessorStore, _App_cOProcessorStore, _App_observer, _App_data, _App_proxy, _App_initData, _App_methods, _App_hydrate;
+var _App_instances, _App_rootNode, _App_aOProcessorStore, _App_dOProcessorStore, _App_cOProcessorStore, _App_observer, _App_data, _App_proxy, _App_methods, _App_methodsProxy, _App_hydrate;
 
 
-console.info(`dynamic(dnJS) ©LJM12914. https://github.com/wheelsmake/dynamic
+const version = "1.0.0";
+console.info(`dynamic(dnJS) v${version} ©LJM12914. https://github.com/wheelsmake/dynamic
 You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
 const HTMLDSLs = {
     twoWayBinding: {
@@ -43,7 +44,8 @@ const HTMLDSLs = {
 }, twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}$`), oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}$`), nStwoWayBindingRegExp = new RegExp(`${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}`, "g"), nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}`, "g"), s = [
     "鬼片出现了！",
     "Access to deleted property was blocked: ",
-    ", automatically treated as one-way binding."
+    ", automatically treated as one-way binding.",
+    "function"
 ];
 class App {
     constructor(rootNode) {
@@ -55,7 +57,6 @@ class App {
         _App_observer.set(this, new MutationObserver((records) => {
             for (let i = 0; i < records.length; i++) {
                 const record = records[i], type = record.type;
-                console.log(record);
                 if (type == "attributes" && __classPrivateFieldGet(this, _App_aOProcessorStore, "f").has(record.target))
                     __classPrivateFieldGet(this, _App_aOProcessorStore, "f").get(record.target)(record);
                 else if (type == "characterData" && __classPrivateFieldGet(this, _App_dOProcessorStore, "f").has(record.target))
@@ -65,11 +66,97 @@ class App {
             }
         }));
         _App_data.set(this, {});
-        _App_proxy.set(this, {});
+        _App_proxy.set(this, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
+            get(sharpData, property, proxy) {
+                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+                if (property in sharpData && !sharpData[property].deleted) {
+                    let result;
+                    if (typeof sharpData[property].value == s[3])
+                        result = sharpData[property].cache;
+                    else
+                        result = sharpData[property].value;
+                    return result;
+                }
+                else if (!(property in sharpData))
+                    return undefined;
+                else if (sharpData[property].deleted)
+                    console.warn(`${s[1]}${property}.`);
+                else
+                    console.error(s[0], "get", property);
+            },
+            set(sharpData, property, newValue, proxy) {
+                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+                if (property in sharpData && !sharpData[property].deleted) {
+                    const oldValue = sharpData[property].value;
+                    if (oldValue !== newValue) {
+                        sharpData[property].value = newValue;
+                        processComputedProperty(sharpData[property]);
+                        const exportInstances = sharpData[property].shouldExports;
+                        for (let i = 0; i < exportInstances.length; i++)
+                            (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
+                        for (let i = 0; i < sharpData[property].shouldUpdates.length; i++)
+                            dfsUpdate(sharpData[property].shouldUpdates[i]);
+                        function dfsUpdate(prop) {
+                            if (prop in sharpData && typeof sharpData[prop].value == s[3]) {
+                                const dfsOldValue = sharpData[prop].cache;
+                                sharpData[prop].cache = (sharpData[prop].value.bind(proxy))();
+                                const exportInstances = sharpData[prop].shouldExports;
+                                for (let i = 0; i < exportInstances.length; i++)
+                                    (exportInstances[i][0].bind(proxy))(exportInstances[i], dfsOldValue);
+                                for (let i = 0; i < sharpData[prop].shouldUpdates.length; i++)
+                                    dfsUpdate(sharpData[prop].shouldUpdates[i]);
+                            }
+                        }
+                    }
+                    else
+                        console.log(`Update skipped in ${property} for same value ${newValue}`);
+                }
+                else if (!(property in sharpData)) {
+                    sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
+                    processComputedProperty(sharpData[property]);
+                }
+                else if (sharpData[property].deleted)
+                    console.warn(`${s[1]}${property}.`);
+                else
+                    console.error(s[0], "set", property);
+                return true;
+                function processComputedProperty(dataInstance) {
+                    property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+                    if (typeof newValue == s[3]) {
+                        _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.checkArrowFunction(newValue);
+                        dataInstance.cache = (newValue.bind(proxy))();
+                        const shouldUpdateThis = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
+                        for (let i = 0; i < shouldUpdateThis.length; i++) {
+                            if (!(shouldUpdateThis[i] in sharpData))
+                                proxy[shouldUpdateThis[i]] = undefined;
+                            if (sharpData[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1)
+                                sharpData[shouldUpdateThis[i]].shouldUpdates.push(property);
+                        }
+                    }
+                    else
+                        delete dataInstance.cache;
+                }
+            },
+            deleteProperty(sharpData, property) {
+                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+                const exists = property in sharpData;
+                if (exists)
+                    sharpData[property].deleted = true;
+                return exists;
+            }
+        }));
         _App_methods.set(this, {});
+        _App_methodsProxy.set(this, new Proxy(__classPrivateFieldGet(this, _App_methods, "f"), {
+            get: (sharpMethods, property, proxy) => {
+                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
+                if (property in sharpMethods)
+                    return sharpMethods[property].bind(__classPrivateFieldGet(this, _App_proxy, "f"));
+                else
+                    return undefined;
+            }
+        }));
         __classPrivateFieldSet(this, _App_rootNode, _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode), "f");
         console.info("creating new dynamic instance with rootNode", rootNode);
-        __classPrivateFieldGet(this, _App_instances, "m", _App_initData).call(this);
         __classPrivateFieldGet(this, _App_instances, "m", _App_hydrate).call(this, __classPrivateFieldGet(this, _App_rootNode, "f"));
         __classPrivateFieldGet(this, _App_observer, "f").observe(__classPrivateFieldGet(this, _App_rootNode, "f"), {
             attributes: true,
@@ -87,11 +174,9 @@ class App {
     get _() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
     addExport(dataProperty, func, target) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[dataProperty], func, target); }
     removeExport(dataProperty, func) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.removeExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func); }
-    getExports(dataProperty) { return [...__classPrivateFieldGet(this, _App_data, "f")[dataProperty].shouldExportA]; }
-    addMethods() {
-    }
-    removeMethods() {
-    }
+    getExports(dataProperty) { return [...__classPrivateFieldGet(this, _App_data, "f")[dataProperty].shouldExports]; }
+    get methods() { return __classPrivateFieldGet(this, _App_methodsProxy, "f"); }
+    get $() { return __classPrivateFieldGet(this, _App_methodsProxy, "f"); }
     hydrate(node) {
         if (__classPrivateFieldGet(this, _App_rootNode, "f").contains(node))
             __classPrivateFieldGet(this, _App_instances, "m", _App_hydrate).call(this, node);
@@ -99,76 +184,30 @@ class App {
             _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("node", undefined, node, "the input node must be a descendant of the rootNode");
     }
 }
-_App_rootNode = new WeakMap(), _App_aOProcessorStore = new WeakMap(), _App_dOProcessorStore = new WeakMap(), _App_cOProcessorStore = new WeakMap(), _App_observer = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_instances = new WeakSet(), _App_initData = function _App_initData() {
-    __classPrivateFieldSet(this, _App_proxy, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
-        get(sharpData, property, proxy) {
-            property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-            if (property in sharpData && !sharpData[property].deleted) {
-                let result;
-                if (_utils_index__WEBPACK_IMPORTED_MODULE_1__.data.isComputedProperty(sharpData[property])) {
-                    result = (sharpData[property].value.bind(proxy))(proxy);
-                    sharpData[property].value;
-                }
-                else
-                    result = sharpData[property].value;
-                return result;
-            }
-            else if (!(property in sharpData))
-                return undefined;
-            else if (sharpData[property].deleted)
-                console.warn(`${s[1]}${property}.`);
-            else
-                console.error(s[0], "get", property);
-        },
-        set(sharpData, property, newValue, proxy) {
-            property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-            if (property in sharpData && !sharpData[property].deleted) {
-                if (typeof newValue == "function") {
-                }
-                const oldValue = sharpData[property].value;
-                sharpData[property].value = newValue;
-                if (oldValue !== newValue) {
-                    const exportInstances = sharpData[property].shouldExports, updates = sharpData[property].shouldUpdates;
-                    for (let i = 0; i < updates.length; i++) {
-                    }
-                    for (let i = 0; i < exportInstances.length; i++) {
-                        (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
-                    }
-                }
-            }
-            else if (!(property in sharpData)) {
-                if (typeof newValue == "function") {
-                }
-                else if (typeof newValue == "object") {
-                }
-                sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
-            }
-            else if (sharpData[property].deleted)
-                console.warn(`${s[1]}${property}.`);
-            else
-                console.error(s[0], "set", property);
-            return true;
-        },
-        deleteProperty(sharpData, property) {
-            property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-            const exists = property in sharpData;
-            if (exists)
-                sharpData[property].deleted = true;
-            return exists;
-        }
-    }), "f");
-}, _App_hydrate = function _App_hydrate(node) {
+_App_rootNode = new WeakMap(), _App_aOProcessorStore = new WeakMap(), _App_dOProcessorStore = new WeakMap(), _App_cOProcessorStore = new WeakMap(), _App_observer = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_methodsProxy = new WeakMap(), _App_instances = new WeakSet(), _App_hydrate = function _App_hydrate(node) {
     if (node instanceof Element) {
-        const data = this.data;
-        Object.defineProperty(node, "data", {
-            configurable: false,
-            enumerable: true,
-            get() { return data; }
-        });
-        Object.defineProperty(node, "_", {
-            configurable: false,
-            enumerable: true,
-            get() { return data; }
+        const data = this.data, methods = this.methods;
+        Object.defineProperties(node, {
+            data: {
+                configurable: false,
+                enumerable: true,
+                get() { return data; }
+            },
+            _: {
+                configurable: false,
+                enumerable: true,
+                get() { return data; }
+            },
+            methods: {
+                configurable: false,
+                enumerable: true,
+                get() { return methods; }
+            },
+            $: {
+                configurable: false,
+                enumerable: true,
+                get() { return methods; }
+            }
         });
         const attrs = Array.from(node.attributes), children = Array.from(node.childNodes);
         const tasks = [];
@@ -533,13 +572,15 @@ function register() {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "addExport": () => (/* binding */ addExport),
+/* harmony export */   "checkArrowFunction": () => (/* binding */ checkArrowFunction),
 /* harmony export */   "createData": () => (/* binding */ createData),
+/* harmony export */   "detectShouldUpdate": () => (/* binding */ detectShouldUpdate),
 /* harmony export */   "isComputedProperty": () => (/* binding */ isComputedProperty),
-/* harmony export */   "pushCache": () => (/* binding */ pushCache),
 /* harmony export */   "removeExport": () => (/* binding */ removeExport)
 /* harmony export */ });
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../utils/index */ "../utils/index.ts");
 
+const FtoString = Function.prototype.toString;
 function createData(value, shouldUpdate, shouldExport) {
     const result = {
         value,
@@ -547,14 +588,13 @@ function createData(value, shouldUpdate, shouldExport) {
         shouldUpdates: shouldUpdate || [],
         shouldExports: shouldExport || []
     };
-    if (isComputedProperty(result))
+    if (typeof result.value == "function")
         result.cache = undefined;
     return result;
 }
 function addExport(proxy, dataInstance, func, target) {
-    const sE = dataInstance.shouldExports, funcString = func.toString();
-    if (funcString.match(/^\([^\(\)]*\)[\s]*=>/))
-        _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("func", "exportFunc", func, "export function must not be an arrow function");
+    const sE = dataInstance.shouldExports;
+    checkArrowFunction(func);
     let isDuplicated = false;
     for (let i = 0; i < sE.length; i++)
         if (sE[i][0] === func) {
@@ -569,6 +609,10 @@ function addExport(proxy, dataInstance, func, target) {
         (func.bind(proxy))(exportInstance, dataInstance.value);
     }
     return [...sE];
+}
+function checkArrowFunction(func) {
+    if (FtoString.call(func).match(/^\([^\(\)]*\)[\s]*=>/))
+        _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("func", undefined, func, "this function must not be an arrow function");
 }
 function removeExport(dataInstance, func) {
     const sE = dataInstance.shouldExports;
@@ -593,7 +637,40 @@ function removeExport(dataInstance, func) {
 function isComputedProperty(data) {
     return typeof data.value == "function";
 }
-function pushCache() {
+function detectShouldUpdate(string) {
+    const inQuote = { double: false, single: false, reversed: false }, result = [];
+    var functionStarted = false, resultAdding = false, subCursor = 0;
+    for (let i = 0; i < string.length; i++) {
+        if (string[i] == "{" && !functionStarted)
+            functionStarted = true;
+        if (functionStarted) {
+            if (string[i] == "\\n") {
+                inQuote.double = false;
+                inQuote.single = false;
+            }
+            if (string[i] == "`" && !inQuote.single && !inQuote.double)
+                inQuote.reversed = !inQuote.reversed;
+            if (string[i] == '"' && !inQuote.single && !inQuote.reversed)
+                inQuote.double = !inQuote.double;
+            if (string[i] == "'" && !inQuote.double && !inQuote.reversed)
+                inQuote.single = !inQuote.single;
+            if (inQuote.reversed && string[i] == "$" && string[i + 1] == "{")
+                processTemplate(i);
+            if (!string[i].match(/[\w$]/) && subCursor != 0 && !inQuote.single && !inQuote.double && !inQuote.reversed) {
+                result.push(string.substring(subCursor, i));
+                subCursor = 0;
+            }
+            if (!inQuote.single && !inQuote.double && !inQuote.reversed
+                && string[i] == "t" && string[i + 1] == "h" && string[i + 2] == "i" && string[i + 3] == "s"
+                && string[i + 4] == ".") {
+                subCursor = i + 5;
+                i += 4;
+            }
+        }
+    }
+    return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(result);
+    function processTemplate(i) {
+    }
 }
 
 
@@ -687,8 +764,8 @@ function advancedStringify(input) {
         }
     }
 }
-function compatibleToString(input2) {
-    return "toString" in input2 ? input2.toString() : toString.call(input2);
+function compatibleToString(input) {
+    return "toString" in input ? input.toString() : toString.call(input);
 }
 
 

@@ -1,11 +1,14 @@
 ﻿var dy = new Dynamic("#app");
 dy.data.name = "dynamic";
 dy.data.op = function(){
+    this.few = '"``"';
+    delete this;
     if(this.name === 1){
-        return 2;
+        return `fe
+        `;
     }
     else if(this.name === "dynamic"){
-        return "hahahahahahaha!";
+        return "hahahah`''ahahaha''!";
     }
     else{
         return null;
@@ -56,7 +59,7 @@ dy.data.object2 = o2;
 dy.data.count = 0;
 dy.data.dnValue = "";
 dy.data.deValue = "default value";
-/*setInterval(()=>{
+setInterval(()=>{
     if(dy._.name == "dynamic"){
         dy._.name = "timeNow:_Iamuseless_:" + new Date().getTime();
     }
@@ -75,5 +78,5 @@ function updateTime(){
     else if(second.length == 1) se = `0${second}`;
     else se = second;
     dy.data.time = `${date.getHours()}:${date.getMinutes()}:${se}`;
-}*/
+}
 //Dynamic.disableDevTool();

@@ -4,5 +4,5 @@
 */
 type functionObject = Record<string, Function>;
 type Elementy = Element | string;
-type dataObject = Record<string, data>;
+type dataObject = Record<string, data<any>>;
 type MRProcessorFn = (record :MutationRecord)=>void;

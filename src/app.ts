@@ -4,10 +4,11 @@
 */
 import * as utils from "../../utils/index";
 import * as lUtils from "./utils/index";
+const version = "1.0.0";
 
 //开发模式
 console.info(
-`dynamic(dnJS) ©LJM12914. https://github.com/wheelsmake/dynamic
+`dynamic(dnJS) v${version} ©LJM12914. https://github.com/wheelsmake/dynamic
 You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
 
 const
@@ -33,7 +34,8 @@ const
     s :string[] = [
         "鬼片出现了！",
         "Access to deleted property was blocked: ",
-        ", automatically treated as one-way binding."
+        ", automatically treated as one-way binding.",
+        "function"
     ];
 
 
@@ -43,7 +45,6 @@ export default class App{
     constructor(rootNode :Elementy){
         this.#rootNode = utils.arguments.reduceToElement(rootNode)!;
         console.info("creating new dynamic instance with rootNode", rootNode);
-        this.#initData();
         this.#hydrate(this.#rootNode);
         //不用观察自己对DOM的修改
         this.#observer.observe(this.#rootNode, {
@@ -69,7 +70,7 @@ export default class App{
     #observer :MutationObserver = new MutationObserver((records :MutationRecord[])=>{
         for(let i = 0; i < records.length; i++){
             const record = records[i], type = record.type;
-            console.log(record);
+            //console.log(record);
             //既然有attribute那肯定是Element
             if(type == "attributes" && this.#aOProcessorStore.has(record.target as Element)) this.#aOProcessorStore.get(record.target as Element)!(record);
             else if(type == "characterData" && this.#dOProcessorStore.has(record.target)) this.#dOProcessorStore.get(record.target)!(record);
@@ -82,105 +83,129 @@ export default class App{
 
 //#region 数据管理
     #data :dataObject = {};
+    //proxy本身没有不可变性，必须再用一个data只读伪属性保护 //class内部不要引用这个data！内部为什么不直接引用#proxy呢？？？？？
+    get data(){return this.#proxy;}
+    get _(){return this.#proxy;}
     //proxy虽然代理了#data这个dataObject，但它的表现其实就是一个典型的、完整的anyObject
-    #proxy :anyObject = {};
-    //proxy本身没有不可变性，必须再用一个data只读伪属性保护
-    get data(){return this.#proxy;} //class内部不要引用这个data！内部为什么不直接引用#proxy呢？？？？？
-    get _(){return this.#proxy;} //缩写
-    //get __DEV_data__(){return this.#data;}
-    #initData(){
-        //note:sharpData === this.#data
-        this.#proxy = new Proxy(this.#data, {
-            get(sharpData :dataObject, property :string | symbol, proxy :dataObject) :any{
-                property = lUtils.misc.eliminateSymbol(property);
-                //console.log("get", property);
-                //正常存在该属性
-                if(property in sharpData && !sharpData[property].deleted){
-                    let result :any;
-                    //如果是“计算”属性就“计算”它，获得返回值
-                    if(lUtils.data.isComputedProperty(sharpData[property])){
-                        result = (sharpData[property].value.bind(proxy))(proxy);
-                        sharpData[property].value
-                    }
-                    else result = sharpData[property].value;
-                    //不要在这边优化object显示，这边是有啥输出啥！人家传一个object进来，你给他一个string回去？？？正确的方法是在textContent替换中写object！
-                    return result;
-                }
-                //不用创建属性！
-                else if(!(property in sharpData)) return undefined;
-                //该属性已被删除fixed:这个不能放在没有该属性前，reading undefined警告
-                else if(sharpData[property].deleted) console.warn(`${s[1]}${property}.`);
-                else console.error(s[0], "get", property); //不可能有else了……？
-            },
-            set(sharpData :dataObject, property :string | symbol, newValue :unknown, proxy :dataObject) :boolean{
-                property = lUtils.misc.eliminateSymbol(property);
-                //console.log("set", property, newValue);
-                //正常存在该属性
-                if(property in sharpData && !sharpData[property].deleted){
-                    //如果传入的是函数，那么就收集函数中需要的属性，将这些属性的shouldUpdate中推一个这个属性
-                    //`a.shouldUpdate[number] = "b"` 的意思是：当属性a发生改变时，要去更新b
-                    //更新b并不是运行一次b.value函数，而是去更新b.shouldExport，重新运行一遍这些方法，将DOM中的b更新
-                    //我们也要同样地去b.shouldUpdate里将它们的shouldExport运行了，因为它们的值也“应该”改变了
-                    //这是一个递归过程，一直从shouldUpdate下去，一直运行shouldExport
-                    if(typeof newValue == "function"){
-                        //todo:“计算”属性
-                    }
-                    const oldValue = sharpData[property].value;
-                    sharpData[property].value = newValue;
-                    if(oldValue !== newValue){ //要是前后相同，为什么还要更新呢？——嫖怪
-                        //console.log(`export triggered on property ${property}, oldvalue:${oldValue},newvalue:${newValue}`);
-                        //更新依赖方法
-                        const exportInstances = sharpData[property].shouldExports, updates = sharpData[property].shouldUpdates;
-                        for(let i = 0; i < updates.length; i++){
-                            
-                        }
-                        for(let i = 0; i < exportInstances.length; i++){
-                            (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
-                        }
-                    }
-                }
-                //尚未有该属性，新建
-                else if(!(property in sharpData)){
-                    if(typeof newValue == "function"){
-                        //todo:“计算”属性
-                    }
-                    else if(typeof newValue == "object"){
-
-                    }
-                    sharpData[property] = lUtils.data.createData(newValue);
-                }
-                //该属性已被删除fixed:这个不能放在没有该属性前，reading undefined警告
-                else if(sharpData[property].deleted) console.warn(`${s[1]}${property}.`);
-                else console.error(s[0], "set", property); //不可能有else了
-                return true;
-            },
-            //用has拦截in运算没必要，因其不会导致#data状态的改变，并且in是可以完全正常使用的
-            //Proxy的defineProperty只会在Object.defineProperty走到，别听MDN的
-            //https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/defineProperty#:~:text=proxy.property%3D%27value%27
-            //只要警告他们不要用Object.defineProperty往data里扔东西就好了
-            deleteProperty(sharpData :dataObject, property :string | symbol) :boolean{
-                //reviewed:不要真正删除而是标记删除
-                property = lUtils.misc.eliminateSymbol(property);
-                const exists = property in sharpData;
-                if(exists) sharpData[property].deleted = true;
-                return exists;
+    #proxy :anyObject = new Proxy(this.#data, {
+        get(sharpData :dataObject, property :string | symbol, proxy :anyObject) :any{
+            property = lUtils.misc.eliminateSymbol(property);
+            //console.log("get", property);
+            //正常存在该属性
+            if(property in sharpData && !sharpData[property].deleted){
+                let result :any;
+                //如果是“计算”属性就返回缓存值
+                if(typeof sharpData[property].value == s[3]) result = sharpData[property].cache;
+                else result = sharpData[property].value;
+                //不要在这边优化object显示，这边是有啥输出啥！人家传一个object进来，你给他一个string回去？？？正确的方法是在textContent替换中写object！
+                return result;
             }
-        });
-    }
+            //不用创建属性！
+            else if(!(property in sharpData)) return undefined;
+            //该属性已被删除fixed:这个不能放在没有该属性前，reading undefined警告
+            else if(sharpData[property].deleted) console.warn(`${s[1]}${property}.`);
+            else console.error(s[0], "get", property); //不可能有else了……？
+        },
+        set(sharpData :dataObject, property :string | symbol, newValue :unknown, proxy :anyObject) :boolean{
+            property = lUtils.misc.eliminateSymbol(property);
+            //console.log("set", property, newValue);
+            //正常存在该属性
+            if(property in sharpData && !sharpData[property].deleted){
+                //如果传入的是函数，那么就收集函数中需要的属性，将这些属性的shouldUpdate中推一个这个属性
+                //`a.shouldUpdate[number] = "b"` 的意思是：当属性a发生改变时，要去更新b
+                //更新b并不是运行一次b.value函数，而是去更新b.shouldExport，重新运行一遍这些方法，将DOM中的b更新
+                //我们也要同样地去b.shouldUpdate里将它们的shouldExport运行了，因为它们的值也“应该”改变了
+                //这是一个递归过程，一直从shouldUpdate下去，一直运行shouldExport
+                const oldValue = sharpData[property].value;
+                if(oldValue !== newValue){ //要是前后相同，那为什么还要更新呢？——嫖怪
+                    sharpData[property].value = newValue;
+                    processComputedProperty(sharpData[property]);
+                    //导出数据
+                    const exportInstances = sharpData[property].shouldExports;
+                    for(let i = 0; i < exportInstances.length; i++) (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
+                    //更新需要更新的属性
+                    //console.log("update"+property, sharpData[property].shouldUpdates);
+                    for(let i = 0; i < sharpData[property].shouldUpdates.length; i++) dfsUpdate(sharpData[property].shouldUpdates[i]);
+                    function dfsUpdate(prop :string) :void{
+                        if(prop in sharpData && typeof sharpData[prop].value == s[3]){ //找到计算属性
+                            const dfsOldValue = sharpData[prop].cache; //记录旧数据
+                            sharpData[prop].cache = (sharpData[prop].value.bind(proxy))(); //更新“计算”属性的缓存
+                            //导出数据
+                            const exportInstances = sharpData[prop].shouldExports;
+                            for(let i = 0; i < exportInstances.length; i++) (exportInstances[i][0].bind(proxy))(exportInstances[i], dfsOldValue);
+                            //递归
+                            for(let i = 0; i < sharpData[prop].shouldUpdates.length; i++) dfsUpdate(sharpData[prop].shouldUpdates[i]);
+                        }
+                    }
+                }
+                //阴间功能：将计算属性赋值给它自己会触发重新计算lUtils.data.checkArrowFunction(newValue as Function);
+                //太阴间了，会导致将cache赋给value，不要了
+                //else if(typeof newValue == s[3]) sharpData[property].cache = ((newValue as Function).bind(proxy))();
+                else console.log(`Update skipped in ${property} for same value ${newValue}`);
+            }
+            //尚未有该属性，新建
+            else if(!(property in sharpData)){
+                sharpData[property] = lUtils.data.createData(newValue);
+                processComputedProperty(sharpData[property]);
+            }
+            //该属性已被删除fixed:这个不能放在没有该属性前，reading undefined警告
+            else if(sharpData[property].deleted) console.warn(`${s[1]}${property}.`);
+            else console.error(s[0], "set", property); //不可能有else了
+            return true;
+            /**建立cache，执行计算，分析函数，修改shouldUpdates，否则删除cache*/
+            function processComputedProperty<T>(dataInstance :data<T>) :void{
+                property = lUtils.misc.eliminateSymbol(property);
+                if(typeof newValue == s[3]){
+                    lUtils.data.checkArrowFunction(newValue as Function);
+                    dataInstance.cache = ((newValue as Function).bind(proxy))();
+                    const shouldUpdateThis = lUtils.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
+                    //console.log(shouldUpdateThis, property);
+                    for(let i = 0; i < shouldUpdateThis.length; i++){
+                        //如果函数中访问了还没有创建的属性，那么我们只能去创建它，因为shouldUpdateA不能在之后补上。其实正确的做法是先不创建的
+                        if(!(shouldUpdateThis[i] in sharpData)) proxy[shouldUpdateThis[i]] = undefined;
+                        if(sharpData[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1) sharpData[shouldUpdateThis[i]].shouldUpdates.push(property);
+                    }
+                }
+                //将“计算”属性变成普通属性，反正delete不报错，随便操作
+                else delete dataInstance.cache;
+            }
+        },
+        //用has拦截in运算没必要，因其不会导致#data状态的改变，并且in是可以完全正常使用的
+        //Proxy的defineProperty只会在Object.defineProperty走到，别听MDN的
+        //https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/defineProperty#:~:text=proxy.property%3D%27value%27
+        //只要警告他们不要用Object.defineProperty往data里扔东西就好了
+        deleteProperty(sharpData :dataObject, property :string | symbol) :boolean{
+            //reviewed:不要真正删除而是标记删除
+            property = lUtils.misc.eliminateSymbol(property);
+            const exists = property in sharpData;
+            if(exists) sharpData[property].deleted = true;
+            return exists;
+        }
+    });
     //这几个必须使用#data得到完整的data实例
     addExport(dataProperty :string, func :exportFunc, target :Node) :shouldExportA{return lUtils.data.addExport(this.#proxy, this.#data[dataProperty], func, target);}
     removeExport(dataProperty :string, func :string | exportFunc) :shouldExportA{return lUtils.data.removeExport(this.#data[dataProperty], func);}
-    getExports(dataProperty :string) :shouldExportA{return [...this.#data[dataProperty].shouldExportA];}
+    getExports(dataProperty :string) :shouldExportA{return [...this.#data[dataProperty].shouldExports];}
 //#endregion
 
-//#region todo:实例内方法
+//#region 实例内方法
     #methods :functionObject = {};
-    addMethods(){
-
-    }
-    removeMethods(){
-
-    }
+    #methodsProxy = new Proxy(this.#methods, {
+        //review:为了获取#proxy我们只能使用箭头函数了，不知道会不会出问题
+        get: (sharpMethods, property, proxy)=>{
+            property = lUtils.misc.eliminateSymbol(property);
+            if(property in sharpMethods) return sharpMethods[property].bind(this.#proxy);
+            else return undefined;
+        }/*,
+        set(sharpMethods, property, newValue, proxy){
+            property = lUtils.misc.eliminateSymbol(property);
+            //if(property in sharpMethods) console.warn(`Avoid changing methods`); //感觉改方法挺常见的
+            sharpMethods[property] = newValue;
+            return true;
+        }*/
+    });
+    get methods(){return this.#methodsProxy;}
+    get $(){return this.#methodsProxy;}
 //#endregion
 
 //#region HTML声明式语法
@@ -194,16 +219,28 @@ export default class App{
         if(node instanceof Element){
             //hack:超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
             //给作用域内每个元素的data和_都弄上这个data，然后只要this一下就出来了！
-            const data = this.data;
-            Object.defineProperty(node, "data", {
-                configurable: false,
-                enumerable: true,
-                get(){return data;}
-            });
-            Object.defineProperty(node, "_", {
-                configurable: false,
-                enumerable: true,
-                get(){return data;}
+            const data = this.data, methods = this.methods;
+            Object.defineProperties(node, {
+                data: {
+                    configurable: false,
+                    enumerable: true,
+                    get(){return data;}
+                },
+                _: {
+                    configurable: false,
+                    enumerable: true,
+                    get(){return data;}
+                },
+                methods: {
+                    configurable: false,
+                    enumerable: true,
+                    get(){return methods;}
+                },
+                $: {
+                    configurable: false,
+                    enumerable: true,
+                    get(){return methods;}
+                }
             });
 
             const attrs = Array.from(node.attributes), children = Array.from(node.childNodes) as Node[];
@@ -391,7 +428,8 @@ export default class App{
                           parent = node.parentNode!; //不可能没有parentNode！
                     if(parent.childNodes.length == 1){
                         const __addedByDynamic__ :exportFunc = function(this :anyObject){
-                            //由于目前parent里只有一个只有一个插值Element，我们完全可以直接将内容写进parent
+                            //fixme:由于目前parent里只有一个只有一个插值Element，我们完全可以直接将内容写进parent；
+                            //但要输出HTML DOM就不能这样做了
                             if(parent.textContent !== this[property]) parent.textContent = this[property];
                             /*let t = text;
                             if(!document.contains(exportInstance[1]!)){ //检查旧文本节点还在不在，这个别过滤，常回家看看他不香吗？
