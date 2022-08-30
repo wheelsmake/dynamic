@@ -187,7 +187,7 @@ class App {
 _App_rootNode = new WeakMap(), _App_aOProcessorStore = new WeakMap(), _App_dOProcessorStore = new WeakMap(), _App_cOProcessorStore = new WeakMap(), _App_observer = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_methodsProxy = new WeakMap(), _App_instances = new WeakSet(), _App_hydrate = function _App_hydrate(node) {
     if (node instanceof Element) {
         const data = this.data, methods = this.methods;
-        Object.defineProperties(node, {
+        _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.noErrorDefineProperties(node, {
             data: {
                 configurable: false,
                 enumerable: true,
@@ -711,7 +711,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "advancedStringify": () => (/* binding */ advancedStringify),
 /* harmony export */   "compatibleToString": () => (/* binding */ compatibleToString),
-/* harmony export */   "eliminateSymbol": () => (/* binding */ eliminateSymbol)
+/* harmony export */   "eliminateSymbol": () => (/* binding */ eliminateSymbol),
+/* harmony export */   "noErrorDefineProperties": () => (/* binding */ noErrorDefineProperties)
 /* harmony export */ });
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../utils/index */ "../utils/index.ts");
 /* harmony import */ var _libs_cycle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../libs/cycle */ "./src/libs/cycle.ts");
@@ -766,6 +767,11 @@ function advancedStringify(input) {
 }
 function compatibleToString(input) {
     return "toString" in input ? input.toString() : toString.call(input);
+}
+function noErrorDefineProperties(obj, properties) {
+    for (let i in properties)
+        if (!(i in obj))
+            Object.defineProperty(obj, i, properties[i]);
 }
 
 

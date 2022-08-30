@@ -220,7 +220,7 @@ export default class App{
             //hack:超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
             //给作用域内每个元素的data和_都弄上这个data，然后只要this一下就出来了！
             const data = this.data, methods = this.methods;
-            Object.defineProperties(node, {
+            lUtils.misc.noErrorDefineProperties(node, {
                 data: {
                     configurable: false,
                     enumerable: true,
@@ -242,7 +242,6 @@ export default class App{
                     get(){return methods;}
                 }
             });
-
             const attrs = Array.from(node.attributes), children = Array.from(node.childNodes) as Node[];
             //记录必要信息，在遍历完所有属性后再执行破坏性操作，保证这个for循环是纯函数
             const tasks :[1 | 2, string, string, string][] = [];

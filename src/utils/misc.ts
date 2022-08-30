@@ -51,3 +51,6 @@ export function compatibleToString(input :object) :string{
     //typeof number™也不能in？？？那只能在前面兼容了
     return "toString" in input ? input.toString() : toString.call(input);
 }
+export function noErrorDefineProperties(obj :object, properties :PropertyDescriptorMap) :void{
+    for(let i in properties) if(!(i in obj)) Object.defineProperty(obj, i, properties[i]);
+}
