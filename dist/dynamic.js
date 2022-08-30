@@ -93,16 +93,16 @@ class App {
                         processComputedProperty(sharpData[property]);
                         const exportInstances = sharpData[property].shouldExports;
                         for (let i = 0; i < exportInstances.length; i++)
-                            (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
+                            exportInstances[i][0].call(proxy, exportInstances[i], oldValue);
                         for (let i = 0; i < sharpData[property].shouldUpdates.length; i++)
                             dfsUpdate(sharpData[property].shouldUpdates[i]);
                         function dfsUpdate(prop) {
                             if (prop in sharpData && typeof sharpData[prop].value == s[3]) {
                                 const dfsOldValue = sharpData[prop].cache;
-                                sharpData[prop].cache = (sharpData[prop].value.bind(proxy))();
+                                sharpData[prop].cache = sharpData[prop].value.call(proxy);
                                 const exportInstances = sharpData[prop].shouldExports;
                                 for (let i = 0; i < exportInstances.length; i++)
-                                    (exportInstances[i][0].bind(proxy))(exportInstances[i], dfsOldValue);
+                                    exportInstances[i][0].call(proxy, exportInstances[i], dfsOldValue);
                                 for (let i = 0; i < sharpData[prop].shouldUpdates.length; i++)
                                     dfsUpdate(sharpData[prop].shouldUpdates[i]);
                             }
@@ -124,7 +124,7 @@ class App {
                     property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
                     if (typeof newValue == s[3]) {
                         _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.checkArrowFunction(newValue);
-                        dataInstance.cache = (newValue.bind(proxy))();
+                        dataInstance.cache = newValue.call(proxy);
                         const shouldUpdateThis = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
                         for (let i = 0; i < shouldUpdateThis.length; i++) {
                             if (!(shouldUpdateThis[i] in sharpData))

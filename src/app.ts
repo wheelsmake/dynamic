@@ -122,17 +122,17 @@ export default class App{
                     processComputedProperty(sharpData[property]);
                     //导出数据
                     const exportInstances = sharpData[property].shouldExports;
-                    for(let i = 0; i < exportInstances.length; i++) (exportInstances[i][0].bind(proxy))(exportInstances[i], oldValue);
+                    for(let i = 0; i < exportInstances.length; i++) exportInstances[i][0].call(proxy, exportInstances[i], oldValue);
                     //更新需要更新的属性
                     //console.log("update"+property, sharpData[property].shouldUpdates);
                     for(let i = 0; i < sharpData[property].shouldUpdates.length; i++) dfsUpdate(sharpData[property].shouldUpdates[i]);
                     function dfsUpdate(prop :string) :void{
                         if(prop in sharpData && typeof sharpData[prop].value == s[3]){ //找到计算属性
                             const dfsOldValue = sharpData[prop].cache; //记录旧数据
-                            sharpData[prop].cache = (sharpData[prop].value.bind(proxy))(); //更新“计算”属性的缓存
+                            sharpData[prop].cache = sharpData[prop].value.call(proxy); //更新“计算”属性的缓存
                             //导出数据
                             const exportInstances = sharpData[prop].shouldExports;
-                            for(let i = 0; i < exportInstances.length; i++) (exportInstances[i][0].bind(proxy))(exportInstances[i], dfsOldValue);
+                            for(let i = 0; i < exportInstances.length; i++) exportInstances[i][0].call(proxy, exportInstances[i], dfsOldValue);
                             //递归
                             for(let i = 0; i < sharpData[prop].shouldUpdates.length; i++) dfsUpdate(sharpData[prop].shouldUpdates[i]);
                         }
@@ -140,7 +140,7 @@ export default class App{
                 }
                 //阴间功能：将计算属性赋值给它自己会触发重新计算lUtils.data.checkArrowFunction(newValue as Function);
                 //太阴间了，会导致将cache赋给value，不要了
-                //else if(typeof newValue == s[3]) sharpData[property].cache = ((newValue as Function).bind(proxy))();
+                //else if(typeof newValue == s[3]) sharpData[property].cache = 
                 else console.log(`Update skipped in ${property} for same value ${newValue}`);
             }
             //尚未有该属性，新建
@@ -157,7 +157,7 @@ export default class App{
                 property = lUtils.misc.eliminateSymbol(property);
                 if(typeof newValue == s[3]){
                     lUtils.data.checkArrowFunction(newValue as Function);
-                    dataInstance.cache = ((newValue as Function).bind(proxy))();
+                    dataInstance.cache = (newValue as Function).call(proxy);
                     const shouldUpdateThis = lUtils.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
                     //console.log(shouldUpdateThis, property);
                     for(let i = 0; i < shouldUpdateThis.length; i++){
