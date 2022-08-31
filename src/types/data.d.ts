@@ -6,7 +6,7 @@ type exportFunc =
     ((this :anyObject)=>void)
   | ((this :anyObject, exportInstance :exportInstance)=>void)
   | ((this :anyObject, exportInstance :exportInstance, oldValue :any)=>void);
-type exportInstance = [exportFunc, Node | undefined];
+type exportInstance = [exportFunc, Node | undefined, boolean];
 type shouldExportA = exportInstance[];
 type shouldUpdateA = string[];
 interface data<T>{

@@ -14,21 +14,21 @@ You are using the unminified build of dynamic. Make sure to use the minified bui
 const
 //HTML声明式语法设置（不喜欢目前语法的开发者可以fork后自己直接改动这里！）
     HTMLDSLs = {
-        twoWayBinding :{
-            leftBracket: "_:",
-            rightBracket: ":_"
+        two: {
+            l: "_:",
+            r: ":_"
         },
-        oneWayBinding :{
-            leftBracket: "_-",
-            rightBracket: "-_"
+        one: {
+            l: "_-",
+            r: "-_"
         },
-        attrAdditional: ":" //这个玩意的位置配置不在这里，在#hydrate里面，懒得提出来了
+        attr: ":" //这个玩意的位置配置不在这里，在#hydrate里面，懒得提出来了
     },
-    twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}$`),
-    oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}$`),
+    twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.two.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.two.r}$`),
+    oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.one.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.one.r}$`),
     //下面这个是用来检查开发者的错误的
-    nStwoWayBindingRegExp = new RegExp(`${HTMLDSLs.twoWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.twoWayBinding.rightBracket}`, "g"),
-    nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.oneWayBinding.leftBracket}[a-zA-Z$_][\\w$]*${HTMLDSLs.oneWayBinding.rightBracket}`, "g"),
+    nStwoWayBindingRegExp = new RegExp(`${HTMLDSLs.two.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.two.r}`, "g"),
+    nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.one.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.one.r}`, "g"),
 
 //字符串重用
     s :string[] = [
@@ -174,11 +174,16 @@ export default class App{
         //Proxy的defineProperty只会在Object.defineProperty走到，别听MDN的
         //https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/defineProperty#:~:text=proxy.property%3D%27value%27
         //只要警告他们不要用Object.defineProperty往data里扔东西就好了
-        deleteProperty(sharpData :dataObject, property :string | symbol) :boolean{
+        //由于需要获取proxy，我们只能用箭头函数了
+        deleteProperty: (sharpData :dataObject, property :string | symbol) :boolean=>{
             //reviewed:不要真正删除而是标记删除
             property = lUtils.misc.eliminateSymbol(property);
             const exists = property in sharpData;
-            if(exists) sharpData[property].deleted = true;
+            if(exists){
+                //重置值
+                this.#proxy[property] = undefined;
+                sharpData[property].deleted = true;
+            }
             return exists;
         }
     });
@@ -191,7 +196,7 @@ export default class App{
 //#region 实例内方法
     #methods :functionObject = {};
     #methodsProxy = new Proxy(this.#methods, {
-        //review:为了获取#proxy我们只能使用箭头函数了，不知道会不会出问题
+        //reviewed:为了获取#proxy我们只能使用箭头函数了，不知道会不会出问题
         get: (sharpMethods, property, proxy)=>{
             property = lUtils.misc.eliminateSymbol(property);
             if(property in sharpMethods) return sharpMethods[property].bind(this.#proxy);
@@ -210,7 +215,8 @@ export default class App{
 
 //#region HTML声明式语法
     //外部访问
-    hydrate(node :Node) :void{
+    hydrate(node :Nody) :void{
+        node = utils.arguments.reduceToNode(node)!;
         //不要扩展作用域
         if(/*utils.element.isDescendant(node, this.#rootNode)*/this.#rootNode.contains(node)) this.#hydrate(node);
         else utils.generic.E("node", undefined, node, "the input node must be a descendant of the rootNode");
@@ -283,7 +289,7 @@ export default class App{
                     processed_avoidance_defaultTrap_name :string;
                 
                 //各种警告
-                if(nameTwo) console.warn(`It's not rational to declare a two-way binding attribute name: ${name}${s[2]} Use "${HTMLDSLs.oneWayBinding.leftBracket}${name.substring(2, name.length - 2)}${HTMLDSLs.oneWayBinding.rightBracket}" instead.`);
+                if(nameTwo) console.warn(`It's not rational to declare a two-way binding attribute name: ${name}${s[2]} Use "${HTMLDSLs.one.l}${name.substring(2, name.length - 2)}${HTMLDSLs.one.r}" instead.`);
                 //这个还是不能允许
                 if(nameInserted && valueInserted) console.warn("Cannot set an attribute with both name and value dynamic. Dynamic will make only attribute name dynamic.");
                 
@@ -291,38 +297,41 @@ export default class App{
                 if(nameInserted){ //处理属性名
                     name_property = name.substring(2, name.length - 2);
                     //更新attribute的名称，值不改变；但是本质上是删除旧attribute，添加新attribute；因此必须需要一个参数，否则无从得知是哪个attribute
-                    const __addedByDynamic__ :exportFunc = function(this :anyObject, exportInstance :exportInstance, oldValue :string){ //参数里放this不影响函数的参数
-                        const newValue = this[name_property];
-                        //过滤oldValue和newValue相同的情况（类型不同的话不能做到完全过滤）
-                        if(oldValue !== newValue){
-                            const thisNode = exportInstance[1] as Element,
-                            valueOfAttr = thisNode.getAttribute(oldValue)!;
-                            //要先删除，因为setAttribute可能会出错，出错了就会多一个attribute
-                            //出错后再次设置数据属性的值时，如果成功设置了attr，attr值也会是null，因为上次没有成功，旧的attr值直接没了，这完全符合预期！
-                            thisNode.removeAttribute(oldValue);
-                            if(newValue !== ""){
-                                //警告开（我）发（自）者（己）不要传大写字母进属性名
-                                if(typeof newValue == "string" && newValue !== newValue.toLowerCase()) console.warn(`Attribute names are case insensitive, don't pass string with upper-case letters which may cause bugs: ${newValue}`);
-                                thisNode.setAttribute(newValue, valueOfAttr);
+                    const symbol = Symbol();
+                    const funcObj = {
+                        [symbol]: function(this :anyObject, exportInstance :exportInstance, oldValue :string){ //参数里放this不影响函数的参数
+                            const newValue = this[name_property];
+                            //过滤oldValue和newValue相同的情况（类型不同的话不能做到完全过滤）
+                            if(oldValue !== newValue){
+                                const thisNode = exportInstance[1] as Element,
+                                valueOfAttr = thisNode.getAttribute(oldValue)!;
+                                //要先删除，因为setAttribute可能会出错，出错了就会多一个attribute
+                                //出错后再次设置数据属性的值时，如果成功设置了attr，attr值也会是null，因为上次没有成功，旧的attr值直接没了，这完全符合预期！
+                                thisNode.removeAttribute(oldValue);
+                                if(newValue !== ""){
+                                    //警告开（我）发（自）者（己）不要传大写字母进属性名
+                                    if(typeof newValue == "string" && newValue !== newValue.toLowerCase()) console.warn(`Attribute names are case insensitive, don't pass string with upper-case letters which may cause bugs: ${newValue}`);
+                                    thisNode.setAttribute(newValue, valueOfAttr);
+                                }
+                                //else ""不是有效的属性名称，所以我们将它视为属性被动态删除了
                             }
-                            //else ""不是有效的属性名称，所以我们将它视为属性被动态删除了
+                            //else return; //值没有改变，直接返回
                         }
-                        //else return; //值没有改变，直接返回
                     };
                     if(!(name_property in this.#proxy)) this.#proxy[name_property] = undefined; //创建属性
-                    lUtils.data.addExport(this.#proxy, this.#data[name_property], __addedByDynamic__, node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    lUtils.data.addExport(this.#proxy, this.#data[name_property], funcObj[symbol], node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                 }
                 else if(valueInserted){ //处理属性值
                     value_property = value.substring(2, value.length - 2);
                     //筛查规避属性
-                    if(name[name.length - 1] == HTMLDSLs.attrAdditional) processed_avoidance_name = name.substring(0, name.length - 1);
+                    if(name[name.length - 1] == HTMLDSLs.attr) processed_avoidance_name = name.substring(0, name.length - 1);
                     else processed_avoidance_name = name;
-                    let __addedByDynamic__ :exportFunc;
+                    let funcObj :functionObject = {};
                     if( //特殊attribute/property处理
                         (processed_avoidance_name == "value" || processed_avoidance_name == "checked")
                      && node instanceof HTMLInputElement //避免其他元素上可能存在这些开发者自定义的属性，造成干扰
                      && processed_avoidance_name in node //这个东西感觉没啥作用，其实只是加个保险。检测是否存在对应property，似乎value真的在input的原型链上而不是它本身的属性
-                    ) __addedByDynamic__ = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
+                    ) funcObj.func = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
                         const newValue = this[value_property];
                         //过滤oldValue和newValue相同的情况（类型不同的话不能做到完全过滤）
                         if(oldValue !== newValue) (node as anyObject)[processed_avoidance_name] = newValue;
@@ -336,7 +345,7 @@ export default class App{
                             else processed_avoidance_defaultTrap_name = processed_avoidance_name;
                         }
                         else processed_avoidance_defaultTrap_name = processed_avoidance_name;
-                        __addedByDynamic__ = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
+                        funcObj.func = function(this :anyObject, exportInstance :exportInstance, oldValue :any){
                             const newValue = this[value_property];
                             //过滤oldValue和newValue相同的情况（类型不同的话不能做到完全过滤）
                             if(oldValue !== newValue){
@@ -348,7 +357,7 @@ export default class App{
                         }
                     }
                     if(!(value_property in this.#proxy)) this.#proxy[value_property] = undefined; //创建属性
-                    lUtils.data.addExport(this.#proxy, this.#data[value_property], __addedByDynamic__, node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    lUtils.data.addExport(this.#proxy, this.#data[value_property], funcObj.func, node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                     //#region 双向绑定补丁
                     if(valueTwo){
                         //特别处理这几个东西，就是这里需要用到原始的name
@@ -413,7 +422,8 @@ export default class App{
                 //双向绑定直接视为单向绑定并警告
                 const text = node.textContent, twoWayInserts = [...text.matchAll(nStwoWayBindingRegExp)],
                       inserts = [...text.matchAll(nSoneWayBindingRegExp),...twoWayInserts],
-                      matchTwoWayBinding = text.match(twoWayBindingRegExp);
+                      matchTwoWayBinding = !!text.match(twoWayBindingRegExp),
+                      matchOneWayBinding = !!text.match(oneWayBindingRegExp);
                 if(twoWayInserts.length > 0 && !matchTwoWayBinding) console.warn(`Two-way bindings in "${text}" cannot be used in textContent template${s[2]}`);
 
                 //textContent双向绑定，只有单向绑定支持模板，双向绑定是不支持的，必须全都是并且是整个元素全都是，不允许出现其他兄弟节点
@@ -426,35 +436,52 @@ export default class App{
                     const property = text.substring(2, text.length - 2),
                           parent = node.parentNode!; //不可能没有parentNode！
                     if(parent.childNodes.length == 1){
-                        const __addedByDynamic__ :exportFunc = function(this :anyObject){
-                            //fixme:由于目前parent里只有一个只有一个插值Element，我们完全可以直接将内容写进parent；
-                            //但要输出HTML DOM就不能这样做了
-                            if(parent.textContent !== this[property]) parent.textContent = this[property];
-                            /*let t = text;
-                            if(!document.contains(exportInstance[1]!)){ //检查旧文本节点还在不在，这个别过滤，常回家看看他不香吗？
-                                let oldNode = exportInstance[1]!;
-                                exportInstance[1] = document.createTextNode(t); //text是模板字符串，要用text才能replaceAll
-                                parent.appendChild(exportInstance[1]); //随便，反正就一个节点
+                        const symbol = Symbol();
+                        const funcObj = {
+                            [symbol]: function(this :anyObject){
+                                //fixed:由于目前parent里只有一个只有一个插值Element，我们完全可以直接将内容写进parent；
+                                //fixme:双向绑定未实装。
+                                const data = this[property];
+                                if(parent.textContent !== data){
+                                    if(data instanceof Element || (data instanceof Array && data[0] instanceof Element)){
+                                        //review:做的比较匆忙
+                                        //todo:这里必须过滤数据未改动的情况，使用vDOM（未实装），否则相当于不用框架
+                                        (parent as Element).innerHTML = "";
+                                        if(data instanceof Element) parent.appendChild(data);
+                                        else for(let i = 0; i < data.length; i++){
+                                            if(data[i] instanceof Element) parent.appendChild(data[i]);
+                                            else parent.appendChild(document.createTextNode(lUtils.misc.advancedStringify(data[i])));
+                                        }
+                                        return;
+                                    }
+                                    else parent.textContent = data;
+                                }
+                                /*let t = text;
+                                if(!document.contains(exportInstance[1]!)){ //检查旧文本节点还在不在，这个别过滤，常回家看看他不香吗？
+                                    let oldNode = exportInstance[1]!;
+                                    exportInstance[1] = document.createTextNode(t); //text是模板字符串，要用text才能replaceAll
+                                    parent.appendChild(exportInstance[1]); //随便，反正就一个节点
+                                }
+                                let thisNode = exportInstance[1]!, data = this[property];
+                                //过滤oldValue和newValue相同的情况（类型不同的话不能做到完全过滤）
+                                if(data !== oldValue){
+                                    //fixed:见initData()->Proxy->set
+                                    if(typeof data == "object") data = lUtils.misc.advancedStringify(data);
+                                    //todo:输出HTML DOM
+                                    t = t.replaceAll(`${HTMLDSLs.twoWayBinding.leftBracket}${property}${HTMLDSLs.twoWayBinding.rightBracket}`, data);
+                                    //上面不能做到完全过滤，所以这里来个终极过滤
+                                    if(thisNode.textContent !== t) thisNode.textContent = t; //不修改innerText而是修改textContent，因为innerText会每次都触发浏览器绘制过程
+                                }*/
                             }
-                            let thisNode = exportInstance[1]!, data = this[property];
-                            //过滤oldValue和newValue相同的情况（类型不同的话不能做到完全过滤）
-                            if(data !== oldValue){
-                                //fixed:见initData()->Proxy->set
-                                if(typeof data == "object") data = lUtils.misc.advancedStringify(data);
-                                //todo:输出HTML DOM
-                                t = t.replaceAll(`${HTMLDSLs.twoWayBinding.leftBracket}${property}${HTMLDSLs.twoWayBinding.rightBracket}`, data);
-                                //上面不能做到完全过滤，所以这里来个终极过滤
-                                if(thisNode.textContent !== t) thisNode.textContent = t; //不修改innerText而是修改textContent，因为innerText会每次都触发浏览器绘制过程
-                            }*/
-                        }
+                        };
                         if(!(property in this.#proxy)) this.#proxy[property] = undefined; //创建属性
-                        lUtils.data.addExport(this.#proxy, this.#data[property], __addedByDynamic__, node);
-        //fixed:note:已经验证：chromium会乱搞文本节点，具体内容是：
-        //仅在chromium中：两个文本节点在一起，在开发者工具中编辑前面那个后后面那个的内容会加到前面，后面那个被删，编辑后面那个会将前面那个删掉。
-        //设置textContent = ""，文本节点不会被删。
-        //contenteditable后内容被用户清空，文本节点不会被删。仅在chromium中：再输入内容时重建的是另一个文本节点，即使设置了webkit-user-modify: read-write-plaintext-only。
-        //因此会出现contenteditable内容清空后新内容输入到新节点的情况
-        //succeed:有解决方案了！可以通过input事件从父元素获取数据！不用抓着文本节点不放了！
+                        lUtils.data.addExport(this.#proxy, this.#data[property], funcObj[symbol], node);
+                        //fixed:note:已经验证：chromium会乱搞文本节点，具体内容是：
+                        //仅在chromium中：两个文本节点在一起，在开发者工具中编辑前面那个后后面那个的内容会加到前面，后面那个被删，编辑后面那个会将前面那个删掉。
+                        //设置textContent = ""，文本节点不会被删。
+                        //contenteditable后内容被用户清空，文本节点不会被删。仅在chromium中：再输入内容时重建的是另一个文本节点，即使设置了webkit-user-modify: read-write-plaintext-only。
+                        //因此会出现contenteditable内容清空后新内容输入到新节点的情况
+                        //succeed:有解决方案了！可以通过input事件从父元素获取数据！不用抓着文本节点不放了！
                         parent.addEventListener("input", (e :Event)=>{
                             if(e.target === parent && parent.textContent !== this.#proxy[property]) this.#proxy[property] = parent.textContent;
                             //todo:目前只支持文本，要支持HTML DOM双向绑定可能需要重构上面的代码
@@ -481,30 +508,57 @@ export default class App{
                     }
                     //构造并记录export方法
                     const NRproperties = utils.generic.noRepeat(properties);
-                    const __addedByDynamic__ :exportFunc = function(this :anyObject, exportInstance :exportInstance){ //参数里放this不影响函数的参数
-                        let t = text; //为了保证它是值类型，node.textContent是引用类型，会变
-                        if(!document.contains(exportInstance[1]!)){ //检查旧文本节点还在不在
-                            exportInstance[1] = document.createTextNode(t); //text是模板字符串，要用text才能replaceAll
-                            parent.insertBefore(exportInstance[1], nextNode);
+                    const symbol = Symbol();
+                    const funcObj = {
+                        [symbol]: function(this :anyObject, exportInstance :exportInstance){ //参数里放this不影响函数的参数
+                            const data = this[NRproperties[0]];
+                            if(
+                                (data instanceof Element
+                             || (data instanceof Array && data[0] instanceof Element))
+                             && matchOneWayBinding
+                            ){
+                                exportInstance[2] = true;
+                                console.log(NRproperties);
+                                //review:做的比较匆忙
+                                //todo:这里必须过滤数据未改动的情况，使用vDOM（未实装），否则相当于不用框架
+                                (parent as Element).innerHTML = "";
+                                if(data instanceof Element) parent.appendChild(data);
+                                else for(let i = 0; i < data.length; i++){
+                                    if(data[i] instanceof Element) parent.appendChild(data[i]);
+                                    else parent.appendChild(document.createTextNode(lUtils.misc.advancedStringify(data[i])));
+                                }
+                            }
+                            else{
+                                let template = text; //为了保证它是值类型，node.textContent是引用类型，会变
+                                if(exportInstance[2]){ //由HTML转为非HTML，创建文本节点
+                                    (parent as Element).innerHTML = "";
+                                    exportInstance[1] = document.createTextNode(template);
+                                    parent.insertBefore(exportInstance[1], nextNode);
+                                }
+                                else if(!document.contains(exportInstance[1]!)){ //检查旧文本节点还在不在
+                                    exportInstance[1] = document.createTextNode(template); //要用template才能replaceAll
+                                    parent.insertBefore(exportInstance[1], nextNode);
+                                }
+                                let thisNode = exportInstance[1]!;
+                                exportInstance[2] = false;
+                                //由于不知道调用该函数的数据属性（caller）是哪个，无法过滤数据并未改动的情况，也因此会收到addExport的调用
+                                for(let i = 0; i < NRproperties.length; i++){
+                                    let data = this[NRproperties[i]];
+                                    //if(data instanceof Element || data instanceof Array){//不允许在模板中输出HTML DOM
+                                    if(typeof data == "object") data = lUtils.misc.advancedStringify(data);
+                                    template = template //这里也需要处理双向绑定，因为模板中的双向绑定被当作是单向绑定了
+                                    .replaceAll(`${HTMLDSLs.one.l}${NRproperties[i]}${HTMLDSLs.one.r}`, data)
+                                    .replaceAll(`${HTMLDSLs.two.l}${NRproperties[i]}${HTMLDSLs.two.r}`, data);
+                                }
+                                if(thisNode.textContent !== template) thisNode.textContent = template; //不修改innerText而是修改textContent，因为innerText会每次都触发浏览器绘制过程
+                            }
                         }
-                        let thisNode = exportInstance[1]!;
-                        //由于不知道调用该函数的数据属性（caller）是哪个，无法过滤数据并未改动的情况，也因此会收到addExport的调用而不需要自己上阵干掉标识了
-                        for(let i = 0; i < NRproperties.length; i++){
-                            let data = this[NRproperties[i]];
-                            //fixed:见initData()->Proxy->set
-                            if(typeof data == "object") data = lUtils.misc.advancedStringify(data);
-                            //todo:输出HTML DOM
-                            t = t //这里也需要处理双向绑定，因为模板中的双向绑定被当作是单向绑定了
-                            .replaceAll(`${HTMLDSLs.oneWayBinding.leftBracket}${NRproperties[i]}${HTMLDSLs.oneWayBinding.rightBracket}`, data)
-                            .replaceAll(`${HTMLDSLs.twoWayBinding.leftBracket}${NRproperties[i]}${HTMLDSLs.twoWayBinding.rightBracket}`, data);
-                        }
-                        if(thisNode.textContent !== t) thisNode.textContent = t; //不修改innerText而是修改textContent，因为innerText会每次都触发浏览器绘制过程
-                    }
-                    for(let i = 0; i < NRproperties.length; i++) lUtils.data.addExport(this.#proxy, this.#data[NRproperties[i]], __addedByDynamic__, node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    };
+                    for(let i = 0; i < NRproperties.length; i++) lUtils.data.addExport(this.#proxy, this.#data[NRproperties[i]], funcObj[symbol], node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                 }
                 //else 其他情况不用判断
             }
-            //else 一般不可能走到这浏览器就给你删了
+            //else 不管空节点
         }
         //else console.error(s[0], node); //这里没有鬼片，注释节点会走到这里
     }
