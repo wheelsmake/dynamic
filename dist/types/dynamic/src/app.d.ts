@@ -10,6 +10,6 @@ export default class App {
     getExports(dataProperty: string): shouldExportA;
     get methods(): functionObject;
     get $(): functionObject;
-    hydrate(node: Node): void;
+    hydrate(node: Nody): void;
 }
 //# sourceMappingURL=app.d.ts.map

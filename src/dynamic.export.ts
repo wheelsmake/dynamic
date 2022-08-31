@@ -56,8 +56,7 @@ function Dynamic(rootNode :Elementy){return new App(rootNode);}
     compose(){}, //todo:
     //hack
     __disableDevTools__,
-    __enableDevTools__,
-    constructor(){console.log("a");}
+    __enableDevTools__
 });
 
 //导出

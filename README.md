@@ -55,7 +55,7 @@ dynamic 强依赖于 DOM 的不变性，这是弱化 vDOM 所带来的一个缺�
 
 ## 像 Vue，但不是 Vue
 
-dynamic 像 Vue 3 的地方包括使用 `Proxy` 进行属性代理、HTML DOM 上的 `:` 语法、HTML 字符串插值，但它其实与 Vue 有很大区别：
+dynamic 像 Vue 3 的地方包括使用 `Proxy` 进行属性代理、元素 attribute 上的 `:` 语法、HTML 字符串插值，但它其实与 Vue 有很大区别：
 
 1. dynamic 没有计算属性的概念，将属性赋值为一个函数即可立即将其转换为「计算」属性，反之可立即将其转换为普通属性。
 2. dynamic 没有 Vue 众多的 HTML 模板指令，并且不允许在 HTML 字符串插值中使用 JavaScript 表达式，只允许单纯属性。
@@ -114,7 +114,7 @@ import Dynamic from "path/to/dynamic.export.ts";
 </div>
 ```
 
-Vue 实现方式的 JavaScript：（选项式 API，因组合式 API 需要编译且与 dynamic 的设计不太相似）
+Vue 实现方式的 JavaScript：（选项式 API）
 
 ```javascript
 Vue.createApp({
@@ -136,7 +136,7 @@ Vue.createApp({
 }).mount("#app");
 ```
 
-使用 dynamic 实现这个应用：（TODO：从属性输出 DOM 尚未实装）
+使用 dynamic 实现这个应用：
 
 ```html
 <div id="app">
@@ -167,6 +167,7 @@ dy.data.items = function(){
     }
     return result;
 };
+dy.data.class = "myClass";
 dy.data.inputs = "";
 dy.data.count = 0;
 dy.data.date = new Date().getDate();
@@ -189,6 +190,8 @@ dy.addMethods({
 ```
 
 你可能已经有所疑惑。下文将逐语句解释这些 HTML 和 JavaScript，你也可以跳过这里，直接浏览下文的[教程](#教程)。
+
+
 
 //todo: 需要注意的是加 `:` 属性的优先级**比没有加 `:` 属性的优先级高**。这是刻意的设计，可以用于一些有初始影响的属性，例如 `id` 属性：`<div id="s1" :id="_:dynamicID:_"></div>`，在带锚点 URL 访问（`http....#s1`）中可以生效。
 
@@ -241,11 +244,11 @@ var dy = new Dynamic("#el");
 Dynamic.e("#no").innerText = ""; 
 ```
 
-- `chromium` 很喜欢乱删文本节点。详情请见 [`app.ts`](src/app.ts#L15)。
+- `chromium` 很喜欢乱删文本节点。详情请见 [`app.ts`](src/app.ts#L459)。
 
 ### 不要向属性值传入非纯函数
 
-属性值如果是函数，那么这个函数将在每次该函数依赖的数据属性更新时被执行，这意味着不确定的执行时机和频率。因此，**不要在**这个函数中进行修改外部的操作，//todo:这个功能未实装（但可以触发异步请求，前提是这个函数不依赖任何数据属性，否则会导致无法及时更新依赖属性的值。）
+属性值如果是函数，那么这个函数将在每次该函数依赖的数据属性更新时被执行，这意味着不确定的执行时机和频率。因此，**不要在**这个函数中进行修改外部的操作，（但可以触发异步请求，前提是这个函数不依赖任何数据属性，否则会导致无法及时更新依赖属性的值。）//todo:这个功能未实装
 
 # API 指引 todo:
 
