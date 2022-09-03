@@ -17,7 +17,7 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 与 dynamic 的**全部交互**（包括 HTML 模板）均可以通过 JavaScript 完成，dynamic 的 HTML 模板语法只有三个：
 
 - 插入单向绑定属性：下划线加横线 `_- -_`。
-  - 可以用 [`new Dynamic().addExport()`](#addExport) 替代。
+  - 可以用 [`Dynamic().addExport()`](#addExport) 替代。
 
 - 插入双向绑定属性：下划线加冒号 `_: :_`。
   - 双向绑定的使用时机非常少，仅在表单元素或 DOM 编辑场景下有用。但是 dynamic 支持对元素 attribute 的值和元素文本内容进行双向绑定。对 attribute 的键名进行双向绑定是**不合理的**——dynamic 要怎么知道哪个 attribute 是之前那个呢？
@@ -156,7 +156,7 @@ Vue.createApp({
 dynamic 实现方式的 JavaScript：
 
 ```javascript
-const dy = new Dynamic("#app");
+const dy = Dynamic("#app");
 const list = ["a","b","c"];
 dy.data.items = function(){
     const result = [];
@@ -214,7 +214,7 @@ dy.addMethods({
 ## 创建 dynamic 实例
 
 ```typescript
-const dy = new Dynamic(/*Element或css 选择符*/);
+const dy = Dynamic(/*Element或css 选择符*/);
 ```
 
 传入的唯一参数为根节点，根节点**也会**被该实例管理。
@@ -240,7 +240,7 @@ dynamic **强依赖**于其作用域内 DOM 的不变性，也因此才可以实
 ```
 
 ```javascript
-var dy = new Dynamic("#el");
+var dy = Dynamic("#el");
 Dynamic.e("#no").innerText = ""; 
 ```
 
