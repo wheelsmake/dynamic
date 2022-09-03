@@ -65,7 +65,7 @@ export default class App{
     #aOProcessorStore = new WeakMap<Element, MRProcessorFn>();
     #dOProcessorStore = new WeakMap<Node, MRProcessorFn>();
     #cOProcessorStore = new WeakMap<Element, MRProcessorFn>();
-    get dOProcessorStore(){return this.#dOProcessorStore};
+    //get dOProcessorStore(){return this.#dOProcessorStore};
     //简单的DOM监控回调机制，全看对面MRProcessorFn设计得如何
     #observer :MutationObserver = new MutationObserver((records :MutationRecord[])=>{
         for(let i = 0; i < records.length; i++){

@@ -2,7 +2,6 @@ export default class App {
     #private;
     constructor(rootNode: Elementy);
     get rootNode(): Element;
-    get dOProcessorStore(): WeakMap<Node, MRProcessorFn>;
     get data(): anyObject;
     get _(): anyObject;
     addExport(dataProperty: string, func: exportFunc, target: Node): shouldExportA;

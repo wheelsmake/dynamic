@@ -170,8 +170,6 @@ class App {
         });
     }
     get rootNode() { return __classPrivateFieldGet(this, _App_rootNode, "f"); }
-    get dOProcessorStore() { return __classPrivateFieldGet(this, _App_dOProcessorStore, "f"); }
-    ;
     get data() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
     get _() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
     addExport(dataProperty, func, target) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[dataProperty], func, target); }
