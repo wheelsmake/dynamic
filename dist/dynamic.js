@@ -474,20 +474,17 @@ function __enableDevTools__() {
     clearInterval = cI;
     clearInterval(dtInterval);
 }
-function Dynamic(rootNode) { return new _app__WEBPACK_IMPORTED_MODULE_1__["default"](rootNode); }
-((obj) => {
-    for (let i in obj)
-        Dynamic[i] = obj[i];
-})({
-    template: _template__WEBPACK_IMPORTED_MODULE_2__, spa: _spa__WEBPACK_IMPORTED_MODULE_3__, manifest: _manifest__WEBPACK_IMPORTED_MODULE_4__,
-    e(s, scope) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e(s, scope); },
-    render(args) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.render(args.HTML, args.element, args.insertAfter, args.append); },
-    toHTML(HTML) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.toHTML(HTML); },
-    hatch(element, remove) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.hatch(element, remove); },
-    compose() { },
-    __disableDevTools__,
-    __enableDevTools__
-});
+const Dynamic = (rootNode) => { return new _app__WEBPACK_IMPORTED_MODULE_1__["default"](rootNode); };
+Dynamic.template = _template__WEBPACK_IMPORTED_MODULE_2__;
+Dynamic.spa = _spa__WEBPACK_IMPORTED_MODULE_3__;
+Dynamic.manifest = _manifest__WEBPACK_IMPORTED_MODULE_4__;
+Dynamic.e = (s, scope) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e(s, scope); };
+Dynamic.render = (args) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.render(args.HTML, args.element, args.insertAfter, args.append); };
+Dynamic.toHTML = (HTML) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.toHTML(HTML); };
+Dynamic.hatch = (element, remove) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.hatch(element, remove); };
+Dynamic.compose = () => { };
+Dynamic.__disableDevTools__ = __disableDevTools__;
+Dynamic.__enableDevTools__ = __enableDevTools__;
 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.constantize(Dynamic);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dynamic);
 

@@ -39,25 +39,23 @@ function __enableDevTools__() :void{
 }
 
 //构造导出对象
-function Dynamic(rootNode :Elementy){return new App(rootNode);}
-((obj :anyObject)=>{
-    for(let i in obj) (Dynamic as anyObject)[i] = obj[i];
-})({
+const Dynamic :Dynamic = (rootNode :Elementy)=>{return new App(rootNode);}
     //引入模块
-    template, spa, manifest,
+Dynamic.template = template;
+Dynamic.spa = spa;
+Dynamic.manifest = manifest;
     //工具方法
-    e(s: string, scope?: Element | Document) :Node | Node[]{return utils.element.e(s, scope);},
-    render(args :{
-        HTML :string | Element | HTMLCollection | Element[] | Node | NodeList | Node[],
-        element :Element, insertAfter? :boolean, append? :boolean
-    }) :Node[]{return utils.element.render(args.HTML, args.element, args.insertAfter, args.append);},
-    toHTML(HTML :string) :Node[]{return utils.element.toHTML(HTML)},
-    hatch(element :Element, remove? :boolean) :Node[]{return utils.element.hatch(element, remove);},
-    compose(){}, //todo:
+Dynamic.e = (s: string, scope?: Element | Document) :Node | Node[]=>{return utils.element.e(s, scope);};
+Dynamic.render = (args :{
+    HTML :string | Element | HTMLCollection | Element[] | Node | NodeList | Node[];
+    element :Element, insertAfter? :boolean, append? :boolean
+}) :Node[]=>{return utils.element.render(args.HTML, args.element, args.insertAfter, args.append);};
+Dynamic.toHTML = (HTML :string) :Node[]=>{return utils.element.toHTML(HTML)};
+Dynamic.hatch = (element :Element, remove? :boolean) :Node[]=>{return utils.element.hatch(element, remove);};
+Dynamic.compose = ()=>{}; //todo:
     //hack
-    __disableDevTools__,
-    __enableDevTools__
-});
+Dynamic.__disableDevTools__ = __disableDevTools__;
+Dynamic.__enableDevTools__ = __enableDevTools__;
 
 //导出
 utils.generic.constantize(Dynamic);
