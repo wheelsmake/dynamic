@@ -1,4 +1,4 @@
-﻿var dy = new Dynamic("#app");
+﻿var dy = Dynamic("#app");
 dy.data.name = "dynamic";
 dy.data.op = function(){
     this.few = '"``"';

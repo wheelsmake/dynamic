@@ -65,7 +65,7 @@ export default class App{
     #aOProcessorStore = new WeakMap<Element, MRProcessorFn>();
     #dOProcessorStore = new WeakMap<Node, MRProcessorFn>();
     #cOProcessorStore = new WeakMap<Element, MRProcessorFn>();
-    get dOProcessorStore(){return this.#dOProcessorStore};
+    //get dOProcessorStore(){return this.#dOProcessorStore};
     //简单的DOM监控回调机制，全看对面MRProcessorFn设计得如何
     #observer :MutationObserver = new MutationObserver((records :MutationRecord[])=>{
         for(let i = 0; i < records.length; i++){
@@ -161,7 +161,7 @@ export default class App{
                     const shouldUpdateThis = lUtils.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
                     //console.log(shouldUpdateThis, property);
                     for(let i = 0; i < shouldUpdateThis.length; i++){
-                        //如果函数中访问了还没有创建的属性，那么我们只能去创建它，因为shouldUpdateA不能在之后补上。其实正确的做法是先不创建的
+                        //fixme:如果函数中访问了还没有创建的属性，那么我们只能去创建它，因为shouldUpdateA不能在之后补上。其实正确的做法是先不创建的
                         if(!(shouldUpdateThis[i] in sharpData)) proxy[shouldUpdateThis[i]] = undefined;
                         if(sharpData[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1) sharpData[shouldUpdateThis[i]].shouldUpdates.push(property);
                     }

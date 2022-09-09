@@ -7,3 +7,20 @@ type kvObject = Record<string, string | undefined | null>;
 type SSkvObject = Record<string, string>;
 type Elementy = Element | string;
 type Nody = Node | string;
+interface Dynamic extends Function{
+    template: typeof import("../template");
+    spa: typeof import("../spa");
+    manifest: typeof import("../manifest");
+    e(s: string, scope?: Element | Document): Node | Node[];
+    render(args: {
+        HTML: string | Element | HTMLCollection | Element[] | Node | NodeList | Node[];
+        element: Element;
+        insertAfter?: boolean;
+        append?: boolean;
+    }): Node[];
+    toHTML(HTML: string): Node[];
+    hatch(element: Element, remove?: boolean): Node[];
+    compose(): void;
+    __disableDevTools__(): void;
+    __enableDevTools__(): void;
+}
