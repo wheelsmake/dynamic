@@ -161,7 +161,7 @@ export default class App{
                     const shouldUpdateThis = lUtils.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
                     //console.log(shouldUpdateThis, property);
                     for(let i = 0; i < shouldUpdateThis.length; i++){
-                        //如果函数中访问了还没有创建的属性，那么我们只能去创建它，因为shouldUpdateA不能在之后补上。其实正确的做法是先不创建的
+                        //fixme:如果函数中访问了还没有创建的属性，那么我们只能去创建它，因为shouldUpdateA不能在之后补上。其实正确的做法是先不创建的
                         if(!(shouldUpdateThis[i] in sharpData)) proxy[shouldUpdateThis[i]] = undefined;
                         if(sharpData[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1) sharpData[shouldUpdateThis[i]].shouldUpdates.push(property);
                     }
