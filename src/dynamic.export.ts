@@ -39,7 +39,7 @@ function __enableDevTools__() :void{
 }
 
 //构造导出对象
-const Dynamic :Dynamic = (rootNode :Elementy)=>{return new App(rootNode);}
+const Dynamic :Dynamic = (rootNode :Elementy)=>{return App(rootNode);}
     //引入模块
 Dynamic.template = template;
 Dynamic.spa = spa;
