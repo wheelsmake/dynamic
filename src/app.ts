@@ -33,31 +33,31 @@ const
 //字符串重用
     $ :string[] = [
         "鬼片出现了！",
-        "Access to deleted property was blocked: ",
+        "",
         ", automatically treated as one-way binding.",
         "function",
         "DO NOT USE ",
-        " in Dynamic instance."
-    ],
-
-//保留词
-    _ = [
-        "rootNode",
-        "hydrate",
-        "addExport",
-        "removeExport",
-        "getExports"
+        " in Dynamic instance.",
+        " is a reserved property."
     ];
 
 //主函数
-const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
+export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObject{
 
 //#region 常量声明
     const rootNode = utils.arguments.reduceToElement(rootNode_)!;
     //数据属性
     const dataStore :dataObject = {};
-    //内部方法
-    const methodStore :functionObject = {};
+    //自定义方法
+    //const methodStore :functionObject = {};
+    //公开属性
+    const publics :anyObject = {
+        rootNode,
+        hydrate,
+        addExport,
+        removeExport,
+        getExports
+    }
 //#endregion
 
 //#region DOM监控系统 WeakMap：96.59%（2022.8.22）
@@ -80,45 +80,103 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
 //#endregion
 
 //#region 核心代理
-    const proxy = new Proxy(function fakeFunction(){}, {
-        get(target, property, proxy){
-
+    //anyObject：指 鹿 为 马
+    const proxy :anyObject = new Proxy(
+        function(){
+            //seize:
+        },{
+        get(target, property :string, proxy :anyObject){
+            if(property in publics) return publics[property]; //提供保留属性
+            else if(property in dataStore){ //提供数据属性
+                let result :any;
+                //如果是“计算”属性就返回缓存值
+                if(typeof dataStore[property].value == $[3]) result = dataStore[property].cache;
+                else result = dataStore[property].value;
+                //不要在这边优化object显示，这边是有啥输出啥！人家传一个object进来，你给他一个string回去？？？正确的方法是在textContent替换中写object！
+                return result;
+            }
+            else return undefined; //不存在该属性
         },
-        set(target, property, newValue, proxy){
+        set(target, property :string, newValue :any, proxy :anyObject){
+            if(property in publics) utils.generic.EE(`${property}${$[6]}`); //这里不会返回true而会报错
+            else if(property in dataStore){
+                //如果传入的是函数，那么就收集函数中需要的属性，将这些属性的shouldUpdate中推一个这个属性
+                //`a.shouldUpdate[number] = "b"` 的意思是：当属性a发生改变时，要去更新b
+                //更新b并不是运行一次b.value函数，而是去更新b.shouldExport，重新运行一遍这些方法，将DOM中的b更新
+                //我们也要同样地去b.shouldUpdate里将它们的shouldExport运行了，因为它们的值也“应该”改变了
+                //这是一个递归过程，一直从shouldUpdate下去，一直运行shouldExport
+                const oldValue = dataStore[property].value;
+                if(oldValue !== newValue){ //要是前后相同，那为什么还要更新呢？——嫖怪
+                    dataStore[property].value = newValue;
+                    processComputedProperty(dataStore[property]);
+                    //导出数据
+                    const exportInstances = dataStore[property].shouldExports;
+                    for(let i = 0; i < exportInstances.length; i++) exportInstances[i][0].call(proxy, exportInstances[i], oldValue);
+                    //更新需要更新的属性
+                    for(let i = 0; i < dataStore[property].shouldUpdates.length; i++) dfsUpdate(dataStore[property].shouldUpdates[i]);
+                    function dfsUpdate(prop :string) :void{
+                        if(prop in dataStore && typeof dataStore[prop].value == $[3]){ //找到计算属性
+                            const dfsOldValue = dataStore[prop].cache; //记录旧数据
+                            dataStore[prop].cache = dataStore[prop].value.call(proxy); //更新“计算”属性的缓存
+                            //导出数据
+                            const exportInstances = dataStore[prop].shouldExports;
+                            for(let i = 0; i < exportInstances.length; i++) exportInstances[i][0].call(proxy, exportInstances[i], dfsOldValue);
+                            //递归
+                            for(let i = 0; i < dataStore[prop].shouldUpdates.length; i++) dfsUpdate(dataStore[prop].shouldUpdates[i]);
+                        }
+                    }
+                }
+                else console.log(`Update skipped in ${property} for same value ${newValue}`);
+            }
+            else{ //尚未有该属性，新建
+                dataStore[property] = lUtils.data.createData(newValue);
+                processComputedProperty(dataStore[property]);
+            }
             return true;
+            /**建立cache，执行计算，分析函数，修改shouldUpdates，否则删除cache*/
+            function processComputedProperty<T>(dataInstance :data<T>) :void{
+                if(typeof newValue == $[3]){
+                    lUtils.data.checkArrowFunction(newValue as Function);
+                    dataInstance.cache = (newValue as Function).call(proxy);
+                    const shouldUpdateThis = lUtils.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
+                    //console.log(shouldUpdateThis, property);
+                    for(let i = 0; i < shouldUpdateThis.length; i++){
+                        //fixme:如果函数中访问了还没有创建的属性，那么我们只能去创建它，因为shouldUpdateA不能在之后补上。其实正确的做法是先不创建的
+                        if(!(shouldUpdateThis[i] in dataStore)) proxy[shouldUpdateThis[i]] = undefined;
+                        if(dataStore[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1) dataStore[shouldUpdateThis[i]].shouldUpdates.push(property);
+                    }
+                }
+                //将“计算”属性变成普通属性，反正delete不报错，随便操作
+                else delete dataInstance.cache;
+            }
         },
-        deleteProperty(target, property){
-
-            return true;
+        deleteProperty(target, property :string){
+            const exists = property in dataStore;
+            if(property in publics) utils.generic.EE(`${property}${$[6]}`);
+            else if(exists) delete dataStore[property];
+            return exists;
         },
-        apply(target, thisArg, argArray){
-            //todo:用于更新属性
+        apply(target, thisArg :any, argArray :any){
+            //seize:用于更新属性
             console.log("update all computed data properties");
         },
-        construct(target, argArray, newTarget){
-            //todo:暂时不知道能用来干嘛
-            return {a:1};
+        construct(target, argArray :any[], newTarget){
+            //seize:暂时不知道能用来干嘛
+            return {argArray, newTarget};
         },
-        defineProperty(){
-            utils.generic.EE(`${$[4]}defineProperty${$[5]}`);
-            return false;
-        },
-        preventExtensions(){
-            utils.generic.EE(`${$[4]}preventExtensions${$[5]}`);
-            return false;
-        },
-        setPrototypeOf(){
-            utils.generic.EE(`${$[4]}setPrototypeOf${$[5]}`);
-            return false;
-        }
+        defineProperty(){utils.generic.EE(`${$[4]}defineProperty${$[5]}`);return false;},
+        preventExtensions(){utils.generic.EE(`${$[4]}preventExtensions${$[5]}`);return false;},
+        setPrototypeOf(){utils.generic.EE(`${$[4]}setPrototypeOf${$[5]}`);return false;}
     });
 //#endregion
 
 //#region 转换HTML模板
     function hydrate(node :Node) :void{
+        //todo:保留词检测！
         if(node instanceof Element){
             //hack:超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
             //给作用域内每个元素的_都弄上proxy，然后只要this一下就出来了！
+            //todo:真正地将on*事件转为内部事件
             lUtils.misc.noErrorDefineProperties(node, {
                 _: {
                     configurable: false,
@@ -196,8 +254,8 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                             //else return; //值没有改变，直接返回
                         }
                     };
-                    if(!(name_property in this.#proxy)) this.#proxy[name_property] = undefined; //创建属性
-                    lUtils.data.addExport(this.#proxy, this.#data[name_property], funcObj[symbol], node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    if(!(name_property in proxy)) proxy[name_property] = undefined; //创建属性
+                    lUtils.data.addExport(proxy, dataStore[name_property], funcObj[symbol], node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                 }
                 else if(valueInserted){ //处理属性值
                     value_property = value.substring(2, value.length - 2);
@@ -234,20 +292,20 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                             //else 值没有改变，直接返回
                         }
                     }
-                    if(!(value_property in this.#proxy)) this.#proxy[value_property] = undefined; //创建属性
-                    lUtils.data.addExport(this.#proxy, this.#data[value_property], funcObj.func, node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    if(!(value_property in proxy)) proxy[value_property] = undefined; //创建属性
+                    lUtils.data.addExport(proxy, dataStore[value_property], funcObj.func, node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                     //#region 双向绑定补丁
                     if(valueTwo){
                         //特别处理这几个东西，就是这里需要用到原始的name
                         if(node instanceof HTMLInputElement){
                             if(name == "value"){
                                 node.addEventListener("input", (e :Event)=>{
-                                    if(e.target === node) this.#proxy[value_property] = node.value;
+                                    if(e.target === node) proxy[value_property] = node.value;
                                 });
                             }
                             else if(name == "checked"){
                                 node.addEventListener("input", (e :Event)=>{
-                                    if(e.target === node) this.#proxy[value_property] = node.checked;
+                                    if(e.target === node) proxy[value_property] = node.checked;
                                 });
                             }
                             //else if(name == "defaultValue") 不需要了，跟着下面去监听就行了
@@ -258,8 +316,8 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                                 if(
                                     record.attributeName === processed_avoidance_defaultTrap_name
                                 //只有在attribute值和数据属性的值不一样的时候才需要同步，否则会导致无限同步
-                                 && (record.target as Element).getAttribute(record.attributeName!) !== this.#proxy[value_property]
-                                ) this.#proxy[value_property] = (record.target as Element).getAttribute(record.attributeName!);
+                                 && (record.target as Element).getAttribute(record.attributeName!) !== proxy[value_property]
+                                ) proxy[value_property] = (record.target as Element).getAttribute(record.attributeName!);
                             });
                         }
                     }
@@ -278,15 +336,15 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                 if(taskInstance[0] == 1){ //属性名匹配
                     node.removeAttribute(taskInstance[1]); //删除旧属性
                     //这个不能用__addedByDynamic__代替，因为它出于性能原因会检查属性值是否没有改变
-                    node.setAttribute(this.#proxy[taskInstance[2]], taskInstance[3]); //将value搬迁到新的attribute中
+                    node.setAttribute(proxy[taskInstance[2]], taskInstance[3]); //将value搬迁到新的attribute中
                 }
                 else if(taskInstance[0] == 2){ //属性值匹配
                     //是特殊attribute/property，不应setAttr而应修改property
-                    if(taskInstance[2] === undefined) (node as anyObject)[taskInstance[1]] = this.#proxy[taskInstance[3]];
+                    if(taskInstance[2] === undefined) (node as anyObject)[taskInstance[1]] = proxy[taskInstance[3]];
                     //这个不能用__addedByDynamic__代替，因为它出于性能原因会检查属性值是否没有改变
                     else{
                         node.removeAttribute(taskInstance[1]); //使用最初的name来删除旧属性
-                        node.setAttribute(taskInstance[2], this.#proxy[taskInstance[3]]); //将数据属性的值export一次
+                        node.setAttribute(taskInstance[2], proxy[taskInstance[3]]); //将数据属性的值export一次
                     }
                 }
                 //else
@@ -352,8 +410,8 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                                 }*/
                             }
                         };
-                        if(!(property in this.#proxy)) this.#proxy[property] = undefined; //创建属性
-                        lUtils.data.addExport(this.#proxy, this.#data[property], funcObj[symbol], node);
+                        if(!(property in proxy)) proxy[property] = undefined; //创建属性
+                        lUtils.data.addExport(proxy, dataStore[property], funcObj[symbol], node);
                         //fixed:note:已经验证：chromium会乱搞文本节点，具体内容是：
                         //仅在chromium中：两个文本节点在一起，在开发者工具中编辑前面那个后后面那个的内容会加到前面，后面那个被删，编辑后面那个会将前面那个删掉。
                         //设置textContent = ""，文本节点不会被删。
@@ -361,11 +419,11 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                         //因此会出现contenteditable内容清空后新内容输入到新节点的情况
                         //succeed:有解决方案了！可以通过input事件从父元素获取数据！不用抓着文本节点不放了！
                         parent.addEventListener("input", (e :Event)=>{
-                            if(e.target === parent && parent.textContent !== this.#proxy[property]) this.#proxy[property] = parent.textContent;
+                            if(e.target === parent && parent.textContent !== proxy[property]) proxy[property] = parent.textContent;
                             //todo:目前只支持文本，要支持HTML DOM双向绑定可能需要重构上面的代码
                         });
                         //这边需要自己上阵干掉标识
-                        node.textContent = this.#proxy[property];
+                        node.textContent = proxy[property];
                         //console.log(document.contains(node));
                     }
                     else console.error("The parent element of a two-way binding text node must only have this text node.");
@@ -382,7 +440,7 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                         const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
                         //offsets.push(inserts[i].index);
                         properties.push(property);
-                        if(!(property in this.#proxy)) this.#proxy[property] = undefined; //统一使用#proxy创建属性
+                        if(!(property in dataStore)) proxy[property] = undefined;
                     }
                     //构造并记录export方法
                     const NRproperties = utils.generic.noRepeat(properties);
@@ -396,7 +454,6 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                              && matchone
                             ){
                                 exportInstance[2] = true;
-                                console.log(NRproperties);
                                 //review:做的比较匆忙
                                 //todo:这里必须过滤数据未改动的情况，使用vDOM（未实装），否则相当于不用框架
                                 (parent as Element).innerHTML = "";
@@ -432,13 +489,13 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
                             }
                         }
                     };
-                    for(let i = 0; i < NRproperties.length; i++) lUtils.data.addExport(this.#proxy, this.#data[NRproperties[i]], funcObj[symbol], node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
+                    for(let i = 0; i < NRproperties.length; i++) lUtils.data.addExport(proxy, dataStore[NRproperties[i]], funcObj[symbol], node); //如果已经存在数据属性那么不要随便赋值，只需要添加export即可
                 }
                 //else 其他情况不用判断
             }
             //else 不管空节点
         }
-        //else console.error(s[0], node); //这里没有鬼片，注释节点会走到这里
+        //else console.error($[0], node); //这里没有鬼片，注释节点会走到这里
     }
 //#endregion
 
@@ -468,4 +525,3 @@ const App = function(rootNode_ :Elementy, options_? :anyObject) :anyObject{
     return proxy;
 //#endregion
 }
-export default App;

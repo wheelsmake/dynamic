@@ -37,7 +37,7 @@ dynamic 中没有组件的概念，它直接关注数据本身。你可以把 dy
 
 ## 弱化 vDOM
 
-dynamic 拥有 vDOM 功能，但它极少并仅会在很小的范围内打开 vDOM。在很多时候，使用 vDOM 对性能的提升没有什么价值。
+dynamic 拥有 vDOM 功能，但它仅会在很小的范围内打开 vDOM。在很多时候，使用 vDOM 对性能的提升没有什么价值。
 
 - dynamic 使用 [freeDOM](//github.com/wheelsmake/freeDOM) 作为 vDOM 库，这也是一个自制轮子。
 

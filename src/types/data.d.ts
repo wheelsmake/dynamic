@@ -12,7 +12,7 @@ type shouldUpdateA = string[];
 interface data<T>{
     value :T | undefined | null;
     cache? :T | undefined | null;
-    deleted :boolean;
+    //deleted :boolean;
     shouldUpdates :shouldUpdateA;
     shouldExports :shouldExportA;
 }

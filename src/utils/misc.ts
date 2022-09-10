@@ -5,6 +5,7 @@
 import * as utils from "../../../utils/index";
 import * as lUtils from "./index";
 import * as cycle from "../libs/cycle";
+/**@deprecated 请使用 `property :string` 强制设定类型*/
 export function eliminateSymbol(property :string | Symbol) :string{
     if(typeof property == "symbol") utils.generic.E(property.toString(), "string", property,  "index of Dynamic.data must not be a Symbol");
     return property as string;

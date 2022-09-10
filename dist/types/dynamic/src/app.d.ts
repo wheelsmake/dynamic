@@ -1,3 +1,2 @@
-declare const App: App;
-export default App;
+export default function App(rootNode_: Elementy, options_?: anyObject): anyObject;
 //# sourceMappingURL=app.d.ts.map

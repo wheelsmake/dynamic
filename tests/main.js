@@ -1,6 +1,6 @@
 ﻿var dy = Dynamic("#app");
-dy.data.name = "dynamic";
-dy.data.op = function(){
+dy.name = "dynamic";
+dy.op = function(){
     this.few = '"``"';
     delete this;
     if(this.name === 1){
@@ -14,11 +14,11 @@ dy.data.op = function(){
         return null;
     }
 }
-dy.data.yt = "title";
-dy.data.styles = "background: beige;";
+dy.yt = "title";
+dy.styles = "background: beige;";
 var n = {};
 n.a = n;
-dy.data.object = {
+dy.object = {
     a: 0,
     b: "123",
     c: undefined,
@@ -55,16 +55,16 @@ dy.data.object = {
 var o1 = {}, o2 = {};
 o1.a = o2;
 o2.a = o1;
-dy.data.object2 = o2;
-dy.data.count = 0;
-dy.data.dnValue = "";
-dy.data.deValue = "default value";
+dy.object2 = o2;
+dy.count = 0;
+dy.dnValue = "";
+dy.deValue = "default value";
 setInterval(()=>{
-    if(dy._.name == "dynamic"){
-        dy._.name = "timeNow:_Iamuseless_:" + new Date().getTime();
+    if(dy.name == "dynamic"){
+        dy.name = "timeNow:_Iamuseless_:" + new Date().getTime();
     }
     else{
-        dy._.name = "dynamic";
+        dy.name = "dynamic";
     }
 },1000);
 updateTime();
@@ -77,6 +77,6 @@ function updateTime(){
     if(second.length == 0) se = "00";
     else if(second.length == 1) se = `0${second}`;
     else se = second;
-    dy.data.time = `${date.getHours()}:${date.getMinutes()}:${se}`;
+    dy.time = `${date.getHours()}:${date.getMinutes()}:${se}`;
 }
 //Dynamic.disableDevTool();
