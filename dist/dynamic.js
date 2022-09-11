@@ -46,7 +46,8 @@ function App(rootNode_, options_) {
         hydrate,
         addExport,
         removeExport,
-        getExports
+        getExports,
+        getDataKeys,
     };
     const aOProcessorStore = new WeakMap();
     const dOProcessorStore = new WeakMap();
@@ -62,8 +63,18 @@ function App(rootNode_, options_) {
                 cOProcessorStore.get(record.target)(record);
         }
     });
-    const proxy = new Proxy(function () {
-    }, {
+    function addExport() {
+    }
+    function removeExport() {
+    }
+    function getExports() {
+    }
+    function getDataKeys() {
+        return Object.keys(dataStore);
+    }
+    const proxiedFunc = function () {
+    };
+    const proxy = new Proxy(proxiedFunc, {
         get(target, property, proxy) {
             if (property in publics)
                 return publics[property];
@@ -103,8 +114,6 @@ function App(rootNode_, options_) {
                         }
                     }
                 }
-                else
-                    console.log(`Update skipped in ${property} for same value ${newValue}`);
             }
             else {
                 dataStore[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
@@ -141,6 +150,17 @@ function App(rootNode_, options_) {
         construct(target, argArray, newTarget) {
             return { argArray, newTarget };
         },
+        has(_target, property) { return Reflect.has(dataStore, property); },
+        getOwnPropertyDescriptor(target, property) {
+            if (property in dataStore)
+                return Reflect.getOwnPropertyDescriptor(dataStore, property);
+            else
+                return Reflect.getOwnPropertyDescriptor(target, property);
+        },
+        ownKeys(_target) {
+            return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat([...Reflect.ownKeys(dataStore), "prototype", "caller", "arguments", "length", "name"]);
+        },
+        isExtensible() { return true; },
         defineProperty() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}defineProperty${$[5]}`); return false; },
         preventExtensions() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}preventExtensions${$[5]}`); return false; },
         setPrototypeOf() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}setPrototypeOf${$[5]}`); return false; }
@@ -376,11 +396,8 @@ function App(rootNode_, options_) {
             }
         }
     }
-    function addExport() {
-    }
-    function removeExport() {
-    }
-    function getExports() {
+    function __getData__() {
+        return dataStore;
     }
     console.info("creating new dynamic instance with rootNode", rootNode);
     hydrate(rootNode);

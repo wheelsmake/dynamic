@@ -56,8 +56,13 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
         hydrate,
         addExport,
         removeExport,
-        getExports
-    }
+        getExports,
+        getDataKeys,
+        //__getData__
+
+
+
+    };
 //#endregion
 
 //#region DOM监控系统 WeakMap：96.59%（2022.8.22）
@@ -79,12 +84,30 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
     });
 //#endregion
 
+//#region 数据属性导出CRUD
+    function addExport(){
+        
+    }
+    function removeExport(){
+
+    }
+    function getExports(){
+
+    }
+//#endregion
+
+//#region 数据属性杂项方法
+    function getDataKeys() :string[]{
+        return Object.keys(dataStore);
+    }
+//#endregion
+
 //#region 核心代理
+    const proxiedFunc = function(){
+        //seize:
+    };
     //anyObject：指 鹿 为 马
-    const proxy :anyObject = new Proxy(
-        function(){
-            //seize:
-        },{
+    const proxy :anyObject = new Proxy(proxiedFunc, {
         get(target, property :string, proxy :anyObject){
             if(property in publics) return publics[property]; //提供保留属性
             else if(property in dataStore){ //提供数据属性
@@ -126,7 +149,7 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
                         }
                     }
                 }
-                else console.log(`Update skipped in ${property} for same value ${newValue}`);
+                //else console.log(`Update skipped in ${property} for same value ${newValue}`);
             }
             else{ //尚未有该属性，新建
                 dataStore[property] = lUtils.data.createData(newValue);
@@ -157,13 +180,23 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
             return exists;
         },
         apply(target, thisArg :any, argArray :any){
-            //seize:用于更新属性
+            //todo:用于更新属性
             console.log("update all computed data properties");
         },
         construct(target, argArray :any[], newTarget){
             //seize:暂时不知道能用来干嘛
             return {argArray, newTarget};
         },
+        //getPrototypeOf(target){}, 无需拦截
+        has(_target, property :string){return Reflect.has(dataStore, property);},
+        getOwnPropertyDescriptor(target, property :string){
+            if(property in dataStore) return Reflect.getOwnPropertyDescriptor(dataStore, property);
+            else return Reflect.getOwnPropertyDescriptor(target, property);
+        },
+        ownKeys(_target){
+            return utils.generic.noRepeat([...Reflect.ownKeys(dataStore), "prototype", "caller", "arguments", "length", "name"]) as string[];
+        },
+        isExtensible(){return true;},
         defineProperty(){utils.generic.EE(`${$[4]}defineProperty${$[5]}`);return false;},
         preventExtensions(){utils.generic.EE(`${$[4]}preventExtensions${$[5]}`);return false;},
         setPrototypeOf(){utils.generic.EE(`${$[4]}setPrototypeOf${$[5]}`);return false;}
@@ -499,15 +532,9 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
     }
 //#endregion
 
-//#region 数据属性导出CRUD
-    function addExport(){
-        
-    }
-    function removeExport(){
-
-    }
-    function getExports(){
-
+//#region important:开发专用方法，构建前将publics中的引用删除即可
+    function __getData__(){
+        return dataStore;
     }
 //#endregion
 
