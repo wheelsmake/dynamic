@@ -103,11 +103,11 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
 //#endregion
 
 //#region 核心代理
-    const proxiedFunc = function(){
-        //seize:
-    };
     //anyObject：指 鹿 为 马
-    const proxy :anyObject = new Proxy(proxiedFunc, {
+    const proxy :anyObject = new Proxy(
+        function(){
+            //seize:
+        },{
         get(target, property :string, proxy :anyObject){
             if(property in publics) return publics[property]; //提供保留属性
             else if(property in dataStore){ //提供数据属性

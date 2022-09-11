@@ -72,9 +72,8 @@ function App(rootNode_, options_) {
     function getDataKeys() {
         return Object.keys(dataStore);
     }
-    const proxiedFunc = function () {
-    };
-    const proxy = new Proxy(proxiedFunc, {
+    const proxy = new Proxy(function () {
+    }, {
         get(target, property, proxy) {
             if (property in publics)
                 return publics[property];
