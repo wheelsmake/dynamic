@@ -4,7 +4,7 @@
 */
 import * as utils from "../../utils/index";
 import * as lUtils from "./utils/index";
-const version = "2.0.0";
+const version = "2.1.3";
 
 //开发模式
 console.info(
@@ -45,24 +45,31 @@ const
 export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObject{
 
 //#region 常量声明
-    const rootNode = utils.arguments.reduceToElement(rootNode_)!;
+    const 
+    rootNode = utils.arguments.reduceToElement(rootNode_)!,
     //数据属性
-    const dataStore :dataObject = {};
-    //自定义方法
-    //const methodStore :functionObject = {};
+    dataStore :dataObject = {},
     //公开属性
-    const publics :anyObject = {
+    publics :anyObject = {
         rootNode,
         hydrate,
         addExport,
         removeExport,
         getExports,
+        connect,
+        disConnect,
         getDataKeys,
         //__getData__
 
 
 
     };
+//#endregion
+
+//#region important:开发专用方法，构建前将publics中的引用删除即可
+function __getData__(){
+    return dataStore;
+}
 //#endregion
 
 //#region DOM监控系统 WeakMap：96.59%（2022.8.22）
@@ -84,7 +91,7 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
     });
 //#endregion
 
-//#region 数据属性导出CRUD
+//#region 数据属性导出与更新CRUD
     function addExport(){
         
     }
@@ -92,6 +99,12 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
 
     }
     function getExports(){
+
+    }
+    function connect(){
+
+    }
+    function disConnect(){
 
     }
 //#endregion
@@ -103,12 +116,15 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
 //#endregion
 
 //#region 核心代理
+    const functionKey = Symbol(),
+          functionContainer = {
+            [functionKey]: function(){
+                //seize:或许可以在这里运行什么？
+            }
+        };
     //anyObject：指 鹿 为 马
-    const proxy :anyObject = new Proxy(
-        function(){
-            //seize:
-        },{
-        get(target, property :string, proxy :anyObject){
+    const proxy :anyObject = new Proxy(functionContainer[functionKey], {
+        get(target :anyObject, property :string, proxy :anyObject){
             if(property in publics) return publics[property]; //提供保留属性
             else if(property in dataStore){ //提供数据属性
                 let result :any;
@@ -120,7 +136,7 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
             }
             else return undefined; //不存在该属性
         },
-        set(target, property :string, newValue :any, proxy :anyObject){
+        set(target :anyObject, property :string, newValue :any, proxy :anyObject){
             if(property in publics) utils.generic.EE(`${property}${$[6]}`); //这里不会返回true而会报错
             else if(property in dataStore){
                 //如果传入的是函数，那么就收集函数中需要的属性，将这些属性的shouldUpdate中推一个这个属性
@@ -153,6 +169,8 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
             }
             else{ //尚未有该属性，新建
                 dataStore[property] = lUtils.data.createData(newValue);
+                //fixed:新建属性，让devTools能识别这个东西
+                if(!(property in target)) target[property] = undefined;
                 processComputedProperty(dataStore[property]);
             }
             return true;
@@ -173,10 +191,13 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
                 else delete dataInstance.cache;
             }
         },
-        deleteProperty(target, property :string){
+        deleteProperty(target :anyObject, property :string){
             const exists = property in dataStore;
             if(property in publics) utils.generic.EE(`${property}${$[6]}`);
-            else if(exists) delete dataStore[property];
+            else if(exists){
+                delete dataStore[property];
+                delete target[property];
+            }
             return exists;
         },
         apply(target, thisArg :any, argArray :any){
@@ -207,16 +228,16 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
     function hydrate(node :Node) :void{
         //todo:保留词检测！
         if(node instanceof Element){
-            //hack:超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
+            //超级hack完美解决作用域内部元素on*事件必须访问全局App才能访问数据的问题
             //给作用域内每个元素的_都弄上proxy，然后只要this一下就出来了！
             //todo:真正地将on*事件转为内部事件
-            lUtils.misc.noErrorDefineProperties(node, {
-                _: {
-                    configurable: false,
-                    enumerable: true,
-                    get(){return proxy;}
-                }
-            });
+            //lUtils.misc.noErrorDefineProperties(node, {
+            //    _: {
+            //        configurable: false,
+            //        enumerable: true,
+            //        get(){return proxy;}
+            //    }
+            //});
             const attrs = Array.from(node.attributes), children = Array.from(node.childNodes) as Node[];
             //记录必要信息，在遍历完所有属性后再执行破坏性操作，保证这个for循环是纯函数
             const tasks :[1 | 2, string, string, string][] = [];
@@ -529,12 +550,6 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
             //else 不管空节点
         }
         //else console.error($[0], node); //这里没有鬼片，注释节点会走到这里
-    }
-//#endregion
-
-//#region important:开发专用方法，构建前将publics中的引用删除即可
-    function __getData__(){
-        return dataStore;
     }
 //#endregion
 

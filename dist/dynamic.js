@@ -16,7 +16,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/index */ "./src/utils/index.ts");
 
 
-const version = "2.0.0";
+const version = "2.1.3";
 console.info(`dynamic(dnJS) v${version} ©LJM12914. https://github.com/wheelsmake/dynamic
     You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
 const DSL = {
@@ -39,16 +39,19 @@ const DSL = {
     " is a reserved property."
 ];
 function App(rootNode_, options_) {
-    const rootNode = _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode_);
-    const dataStore = {};
-    const publics = {
+    const rootNode = _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode_), dataStore = {}, publics = {
         rootNode,
         hydrate,
         addExport,
         removeExport,
         getExports,
+        connect,
+        disConnect,
         getDataKeys,
     };
+    function __getData__() {
+        return dataStore;
+    }
     const aOProcessorStore = new WeakMap();
     const dOProcessorStore = new WeakMap();
     const cOProcessorStore = new WeakMap();
@@ -69,11 +72,18 @@ function App(rootNode_, options_) {
     }
     function getExports() {
     }
+    function connect() {
+    }
+    function disConnect() {
+    }
     function getDataKeys() {
         return Object.keys(dataStore);
     }
-    const proxy = new Proxy(function () {
-    }, {
+    const functionKey = Symbol(), functionContainer = {
+        [functionKey]: function () {
+        }
+    };
+    const proxy = new Proxy(functionContainer[functionKey], {
         get(target, property, proxy) {
             if (property in publics)
                 return publics[property];
@@ -116,6 +126,8 @@ function App(rootNode_, options_) {
             }
             else {
                 dataStore[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
+                if (!(property in target))
+                    target[property] = undefined;
                 processComputedProperty(dataStore[property]);
             }
             return true;
@@ -139,8 +151,10 @@ function App(rootNode_, options_) {
             const exists = property in dataStore;
             if (property in publics)
                 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${property}${$[6]}`);
-            else if (exists)
+            else if (exists) {
                 delete dataStore[property];
+                delete target[property];
+            }
             return exists;
         },
         apply(target, thisArg, argArray) {
@@ -166,13 +180,6 @@ function App(rootNode_, options_) {
     });
     function hydrate(node) {
         if (node instanceof Element) {
-            _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.noErrorDefineProperties(node, {
-                _: {
-                    configurable: false,
-                    enumerable: true,
-                    get() { return proxy; }
-                }
-            });
             const attrs = Array.from(node.attributes), children = Array.from(node.childNodes);
             const tasks = [];
             for (let i = 0; i < attrs.length; i++) {
@@ -394,9 +401,6 @@ function App(rootNode_, options_) {
                 }
             }
         }
-    }
-    function __getData__() {
-        return dataStore;
     }
     console.info("creating new dynamic instance with rootNode", rootNode);
     hydrate(rootNode);
