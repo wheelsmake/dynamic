@@ -1,1 +1,1 @@
-﻿var dy = new Dynamic("#app");
+﻿var dy = Dynamic("#app");
