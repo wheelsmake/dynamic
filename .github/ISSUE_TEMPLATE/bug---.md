@@ -2,7 +2,7 @@
 name: Bug 报告
 about: 汇报 Dynamic 中存在的 Bug
 title: 先在标题处简要描述 Bug
-labels: bug
+labels: ''
 assignees: ljm12914
 
 ---
