@@ -16,7 +16,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/index */ "./src/utils/index.ts");
 
 
-const version = "2.1.3";
+const version = "2.2.0";
 console.info(`dynamic(dnJS) v${version} ©LJM12914. https://github.com/wheelsmake/dynamic
     You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
 const DSL = {
@@ -29,7 +29,7 @@ const DSL = {
         r: "-_"
     },
     attr: ":"
-}, twoWayBindingRegExp = new RegExp(`^${DSL.two.l}[a-zA-Z$_][\\w$]*${DSL.two.r}$`), oneRegExp = new RegExp(`^${DSL.one.l}[a-zA-Z$_][\\w$]*${DSL.one.r}$`), nStwoWayBindingRegExp = new RegExp(`${DSL.two.l}[a-zA-Z$_][\\w$]*${DSL.two.r}`, "g"), nSoneRegExp = new RegExp(`${DSL.one.l}[a-zA-Z$_][\\w$]*${DSL.one.r}`, "g"), $ = [
+}, twoRegExp = new RegExp(`^${DSL.two.l}[a-zA-Z$_][\\w$]*${DSL.two.r}$`), oneRegExp = new RegExp(`^${DSL.one.l}[a-zA-Z$_][\\w$]*${DSL.one.r}$`), multiTwoRegExp = new RegExp(`${DSL.two.l}[a-zA-Z$_][\\w$]*${DSL.two.r}`, "g"), multiOneRegExp = new RegExp(`${DSL.one.l}[a-zA-Z$_][\\w$]*${DSL.one.r}`, "g"), $ = [
     "鬼片出现了！",
     "",
     ", automatically treated as one-way binding.",
@@ -48,6 +48,9 @@ function App(rootNode_, options_) {
         connect,
         disConnect,
         getDataKeys,
+    }, reservedProperties = ["length", "name", "prototype", "arguments", "caller"], insertStore = new WeakMap(), pfuncSymbol = Symbol(), pfuncObj = {
+        [pfuncSymbol]: function () {
+        }
     };
     function __getData__() {
         return dataStore;
@@ -79,21 +82,17 @@ function App(rootNode_, options_) {
     function getDataKeys() {
         return Object.keys(dataStore);
     }
-    const functionKey = Symbol(), functionContainer = {
-        [functionKey]: function () {
-        }
-    };
-    const proxy = new Proxy(functionContainer[functionKey], {
+    for (let i in publics)
+        pfuncObj[pfuncSymbol][i] = publics[i];
+    const proxy = new Proxy(pfuncObj[pfuncSymbol], {
         get(target, property, proxy) {
             if (property in publics)
                 return publics[property];
             else if (property in dataStore) {
-                let result;
                 if (typeof dataStore[property].value == $[3])
-                    result = dataStore[property].cache;
+                    return dataStore[property].cache;
                 else
-                    result = dataStore[property].value;
-                return result;
+                    return dataStore[property].value;
             }
             else
                 return undefined;
@@ -103,7 +102,7 @@ function App(rootNode_, options_) {
                 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${property}${$[6]}`);
             else if (property in dataStore) {
                 const oldValue = dataStore[property].value;
-                if (oldValue !== newValue) {
+                if (oldValue !== newValue || typeof newValue == $[3]) {
                     dataStore[property].value = newValue;
                     processComputedProperty(dataStore[property]);
                     const exportInstances = dataStore[property].shouldExports;
@@ -126,8 +125,6 @@ function App(rootNode_, options_) {
             }
             else {
                 dataStore[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
-                if (!(property in target))
-                    target[property] = undefined;
                 processComputedProperty(dataStore[property]);
             }
             return true;
@@ -135,16 +132,21 @@ function App(rootNode_, options_) {
                 if (typeof newValue == $[3]) {
                     _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.checkArrowFunction(newValue);
                     dataInstance.cache = newValue.call(proxy);
-                    const shouldUpdateThis = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
-                    for (let i = 0; i < shouldUpdateThis.length; i++) {
-                        if (!(shouldUpdateThis[i] in dataStore))
-                            proxy[shouldUpdateThis[i]] = undefined;
-                        if (dataStore[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1)
-                            dataStore[shouldUpdateThis[i]].shouldUpdates.push(property);
+                    const shouldUpdateThese = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
+                    for (let i = 0; i < shouldUpdateThese.length; i++) {
+                        if (!(shouldUpdateThese[i] in dataStore))
+                            proxy[shouldUpdateThese[i]] = undefined;
+                        if (dataStore[shouldUpdateThese[i]].shouldUpdates.indexOf(property) == -1)
+                            dataStore[shouldUpdateThese[i]].shouldUpdates.push(property);
                     }
+                    if (reservedProperties.indexOf(property) == -1)
+                        target[property] = dataInstance.cache;
                 }
-                else
+                else {
                     delete dataInstance.cache;
+                    if (reservedProperties.indexOf(property) == -1)
+                        target[property] = dataInstance.value;
+                }
             }
         },
         deleteProperty(target, property) {
@@ -158,10 +160,15 @@ function App(rootNode_, options_) {
             return exists;
         },
         apply(target, thisArg, argArray) {
-            console.log("update all computed data properties");
+            if (argArray.length == 1 && argArray[0] in dataStore && "cache" in dataStore[argArray[0]]) {
+                proxy[argArray[0]] = dataStore[argArray[0]].value;
+            }
+            else if (argArray.length == 0) {
+                console.log("todo: update all computed data properties");
+            }
         },
         construct(target, argArray, newTarget) {
-            return { argArray, newTarget };
+            return { version };
         },
         has(_target, property) { return Reflect.has(dataStore, property); },
         getOwnPropertyDescriptor(target, property) {
@@ -170,9 +177,7 @@ function App(rootNode_, options_) {
             else
                 return Reflect.getOwnPropertyDescriptor(target, property);
         },
-        ownKeys(_target) {
-            return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat([...Reflect.ownKeys(dataStore), "prototype", "caller", "arguments", "length", "name"]);
-        },
+        ownKeys(_target) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat([...Reflect.ownKeys(dataStore), "prototype", "caller", "arguments", "length", "name"]); },
         isExtensible() { return true; },
         defineProperty() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}defineProperty${$[5]}`); return false; },
         preventExtensions() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}preventExtensions${$[5]}`); return false; },
@@ -184,7 +189,7 @@ function App(rootNode_, options_) {
             const tasks = [];
             for (let i = 0; i < attrs.length; i++) {
                 let name = attrs[i].name, value = attrs[i].value;
-                const nameOne = !!name.match(oneRegExp), nameTwo = !!name.match(twoWayBindingRegExp), valueOne = !!value.match(oneRegExp), valueTwo = !!value.match(twoWayBindingRegExp), nameInserted = nameOne || nameTwo, valueInserted = valueOne || valueTwo;
+                const nameOne = !!name.match(oneRegExp), nameTwo = !!name.match(twoRegExp), valueOne = !!value.match(oneRegExp), valueTwo = !!value.match(twoRegExp), nameInserted = nameOne || nameTwo, valueInserted = valueOne || valueTwo;
                 let name_property, value_property, processed_avoidance_name, processed_avoidance_defaultTrap_name;
                 if (nameTwo)
                     console.warn(`It's not rational to declare a two-way binding attribute name: ${name}${$[2]} Use "${DSL.one.l}${name.substring(2, name.length - 2)}${DSL.one.r}" instead.`);
@@ -298,36 +303,18 @@ function App(rootNode_, options_) {
                 hydrate(children[i]);
         }
         else if (node instanceof Text) {
-            if (node.textContent) {
-                const text = node.textContent, twoWayInserts = [...text.matchAll(nStwoWayBindingRegExp)], inserts = [...text.matchAll(nSoneRegExp), ...twoWayInserts], matchTwoWayBinding = !!text.match(twoWayBindingRegExp), matchone = !!text.match(oneRegExp);
-                if (twoWayInserts.length > 0 && !matchTwoWayBinding)
+            if (_utils_index__WEBPACK_IMPORTED_MODULE_0__.element.processNLIText(node) !== null && node.textContent) {
+                const text = node.textContent, twoWayInserts = [...text.matchAll(multiTwoRegExp)], totalInserts = [...text.matchAll(multiOneRegExp), ...twoWayInserts], matchtwo = !!text.match(twoRegExp), matchone = !!text.match(oneRegExp);
+                if (twoWayInserts.length > 0 && !matchtwo)
                     console.warn(`Two-way bindings in "${text}" cannot be used in textContent template${$[2]}`);
-                if (matchTwoWayBinding) {
+                if (matchtwo) {
                     if (!(node.parentElement instanceof HTMLElement))
-                        console.warn("It's no use adding a two-way binding insert to an SVGElement, but dynamic will continue anyway.");
+                        console.warn("It's no use adding a two-way binding to an SVGElement but dynamic will continue.");
                     const property = text.substring(2, text.length - 2), parent = node.parentNode;
                     if (parent.childNodes.length == 1) {
                         const symbol = Symbol();
                         const funcObj = {
                             [symbol]: function () {
-                                const data = this[property];
-                                if (parent.textContent !== data) {
-                                    if (data instanceof Element || (data instanceof Array && data[0] instanceof Element)) {
-                                        parent.innerHTML = "";
-                                        if (data instanceof Element)
-                                            parent.appendChild(data);
-                                        else
-                                            for (let i = 0; i < data.length; i++) {
-                                                if (data[i] instanceof Element)
-                                                    parent.appendChild(data[i]);
-                                                else
-                                                    parent.appendChild(document.createTextNode(_utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data[i])));
-                                            }
-                                        return;
-                                    }
-                                    else
-                                        parent.textContent = data;
-                                }
                             }
                         };
                         if (!(property in proxy))
@@ -342,64 +329,49 @@ function App(rootNode_, options_) {
                     else
                         console.error("The parent element of a two-way binding text node must only have this text node.");
                 }
-                else if (inserts.length > 0) {
-                    const properties = [], parent = node.parentNode, nextNode = node.nextSibling;
-                    for (let i = 0; i < inserts.length; i++) {
-                        const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
-                        properties.push(property);
-                        if (!(property in dataStore))
-                            proxy[property] = undefined;
-                    }
-                    const NRproperties = _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(properties);
-                    const symbol = Symbol();
-                    const funcObj = {
-                        [symbol]: function (exportInstance) {
-                            const data = this[NRproperties[0]];
-                            if ((data instanceof Element
-                                || (data instanceof Array && data[0] instanceof Element))
-                                && matchone) {
-                                exportInstance[2] = true;
-                                parent.innerHTML = "";
-                                if (data instanceof Element)
-                                    parent.appendChild(data);
-                                else
-                                    for (let i = 0; i < data.length; i++) {
-                                        if (data[i] instanceof Element)
-                                            parent.appendChild(data[i]);
-                                        else
-                                            parent.appendChild(document.createTextNode(_utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data[i])));
-                                    }
-                            }
-                            else {
+                else if (totalInserts.length > 0) {
+                    const parent = node.parentNode, nextNode = node.nextSibling, properties = (() => {
+                        const result = [];
+                        for (let i = 0; i < totalInserts.length; i++) {
+                            const property = totalInserts[i][0].substring(2, totalInserts[i][0].length - 2);
+                            result.push(property);
+                            if (!(property in dataStore))
+                                proxy[property] = undefined;
+                        }
+                        return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(result);
+                    })(), symbol = Symbol();
+                    if (totalInserts.length == 1 && 1 != 1) {}
+                    else {
+                        const funcObj = {
+                            [symbol]: function (exportInstance) {
                                 let template = text;
-                                if (exportInstance[2]) {
-                                    parent.innerHTML = "";
+                                if (!document.contains(exportInstance[1])) {
                                     exportInstance[1] = document.createTextNode(template);
-                                    parent.insertBefore(exportInstance[1], nextNode);
-                                }
-                                else if (!document.contains(exportInstance[1])) {
-                                    exportInstance[1] = document.createTextNode(template);
-                                    parent.insertBefore(exportInstance[1], nextNode);
+                                    parent?.insertBefore(exportInstance[1], nextNode);
                                 }
                                 let thisNode = exportInstance[1];
-                                exportInstance[2] = false;
-                                for (let i = 0; i < NRproperties.length; i++) {
-                                    let data = this[NRproperties[i]];
+                                for (let i = 0; i < properties.length; i++) {
+                                    let data = this[properties[i]];
                                     if (typeof data == "object")
                                         data = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data);
                                     template = template
-                                        .replaceAll(`${DSL.one.l}${NRproperties[i]}${DSL.one.r}`, data)
-                                        .replaceAll(`${DSL.two.l}${NRproperties[i]}${DSL.two.r}`, data);
+                                        .replaceAll(`${DSL.one.l}${properties[i]}${DSL.one.r}`, data)
+                                        .replaceAll(`${DSL.two.l}${properties[i]}${DSL.two.r}`, data);
                                 }
                                 if (thisNode.textContent !== template)
                                     thisNode.textContent = template;
                             }
-                        }
-                    };
-                    for (let i = 0; i < NRproperties.length; i++)
-                        _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(proxy, dataStore[NRproperties[i]], funcObj[symbol], node);
+                        };
+                        for (let i = 0; i < properties.length; i++)
+                            _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(proxy, dataStore[properties[i]], funcObj[symbol], node);
+                    }
+                }
+                else {
+                    console.log(node, text, twoWayInserts, totalInserts, matchone, matchtwo);
                 }
             }
+            else
+                node.remove();
         }
     }
     console.info("creating new dynamic instance with rootNode", rootNode);
@@ -658,8 +630,6 @@ function detectShouldUpdate(string) {
             inQuote.double = !inQuote.double;
         if (string[i] == "'" && !inQuote.double && !inQuote.reversed)
             inQuote.single = !inQuote.single;
-        if (inQuote.reversed && string[i] == "$" && string[i + 1] == "{")
-            processTemplate(i);
         if (!string[i].match(/[\w$]/) && subCursor != 0 && !inQuote.single && !inQuote.double && !inQuote.reversed) {
             result.push(string.substring(subCursor, i));
             subCursor = 0;
@@ -886,6 +856,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "isChild": () => (/* binding */ isChild),
 /* harmony export */   "isDescendant": () => (/* binding */ isDescendant),
 /* harmony export */   "isInDocument": () => (/* binding */ isInDocument),
+/* harmony export */   "processNLIText": () => (/* binding */ processNLIText),
 /* harmony export */   "render": () => (/* binding */ render),
 /* harmony export */   "toHTML": () => (/* binding */ toHTML)
 /* harmony export */ });
@@ -967,6 +938,26 @@ function render(HTML, element, insertAfter, append) {
         for (let i = 0; i < html.length; i++)
             element.append(html[i]);
     return html;
+}
+function processNLIText(textNode) {
+    const textContent = textNode.textContent, signContent = textContent.replace(/\n\s*/g, ""), parent = textNode.parentElement;
+    const des = document.designMode;
+    if ((parent !== null && parent.tagName == "TEXTAREA")
+        || (parent instanceof HTMLElement && parent.isContentEditable)
+        || (des == "on" || des == "ON"))
+        return textContent;
+    else {
+        if (signContent === "") {
+            textNode.remove();
+            return null;
+        }
+        else if (signContent !== textContent) {
+            textNode.textContent = textContent.replace(/\n\s*/g, " ");
+            return textNode.textContent;
+        }
+        else
+            return textContent;
+    }
 }
 
 

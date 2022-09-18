@@ -61,7 +61,7 @@ dy.dnValue = "";
 dy.deValue = "default value";
 setInterval(()=>{
     if(dy.name == "dynamic"){
-        dy.name = "timeNow:_Iamuseless_:" + new Date().getTime();
+        dy.name = "timeNow_-name-_" + new Date().getTime();
     }
     else{
         dy.name = "dynamic";
@@ -80,3 +80,13 @@ function updateTime(){
     dy.time = `${date.getHours()}:${date.getMinutes()}:${se}`;
 }
 //Dynamic.disableDevTool();
+dy.pressure = "";
+function pressure(){
+    for(let i = 0; i < 1000; i++){
+        dy.pressure += i;
+    }
+}
+pressure();
+dy.aaaa = function(){
+    return new Date().getSeconds();
+}

@@ -10,9 +10,8 @@ type exportInstance = [exportFunc, Node | undefined, boolean];
 type shouldExportA = exportInstance[];
 type shouldUpdateA = string[];
 interface data<T>{
-    value :T | undefined | null;
+    value :T | Function | undefined | null;
     cache? :T | undefined | null;
-    //deleted :boolean;
     shouldUpdates :shouldUpdateA;
     shouldExports :shouldExportA;
 }

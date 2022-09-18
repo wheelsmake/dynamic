@@ -64,13 +64,10 @@ export function isComputedProperty<T>(data :data<T>) :boolean{
     return typeof data.value == "function";
 }
 /**静态分析目标函数访问了哪些this属性，不要对此寄予厚望！*/
-//fixme:有很多地方不健壮，需要修复
 export function detectShouldUpdate(string :string) :shouldUpdateA{
     const inQuote = {double: false, single: false, reversed: false}, result = [];
     var resultAdding = false, subCursor = 0;
     for(let i = 0; i < string.length; i++){
-        //if(string[i] == "{" && !functionStarted) functionStarted = true;
-        //if(functionStarted){
         if(string[i] == "\\n"){
             inQuote.double = false;
             inQuote.single = false;
@@ -78,8 +75,7 @@ export function detectShouldUpdate(string :string) :shouldUpdateA{
         if(string[i] == "`" && !inQuote.single && !inQuote.double) inQuote.reversed = !inQuote.reversed;
         if(string[i] == '"' && !inQuote.single && !inQuote.reversed) inQuote.double = !inQuote.double;
         if(string[i] == "'" && !inQuote.double && !inQuote.reversed) inQuote.single = !inQuote.single;
-        //todo:字符串插值
-        if(inQuote.reversed && string[i] == "$" && string[i + 1] == "{") processTemplate(i);
+        //if(inQuote.reversed && string[i] == "$" && string[i + 1] == "{") processTemplate(i); //todo:字符串插值
         //console.log(string.substring(i - 5, i+5), inQuote);
         //if(string[i] == "]" && subCursor != 0 && !inQuote.single && !inQuote.double && !inQuote.reversed){
             //result.push(string.substring(subCursor, i - 2));
