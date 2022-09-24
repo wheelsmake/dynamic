@@ -14,24 +14,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../utils/index */ "../utils/index.ts");
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/index */ "./src/utils/index.ts");
-var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _App_instances, _App_rootNode, _App_aOProcessorStore, _App_dOProcessorStore, _App_cOProcessorStore, _App_observer, _App_data, _App_proxy, _App_methods, _App_methodsProxy, _App_hydrate;
 
 
 const version = "1.0.0";
 console.info(`dynamic(dnJS) v${version} ©LJM12914. https://github.com/wheelsmake/dynamic
-You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
-const HTMLDSLs = {
+    You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
+const DSL = {
     two: {
         l: "_:",
         r: ":_"
@@ -41,398 +29,325 @@ const HTMLDSLs = {
         r: "-_"
     },
     attr: ":"
-}, twoWayBindingRegExp = new RegExp(`^${HTMLDSLs.two.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.two.r}$`), oneWayBindingRegExp = new RegExp(`^${HTMLDSLs.one.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.one.r}$`), nStwoWayBindingRegExp = new RegExp(`${HTMLDSLs.two.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.two.r}`, "g"), nSoneWayBindingRegExp = new RegExp(`${HTMLDSLs.one.l}[a-zA-Z$_][\\w$]*${HTMLDSLs.one.r}`, "g"), s = [
+}, twoRegExp = new RegExp(`^${DSL.two.l}[a-zA-Z$_][\\w$]*${DSL.two.r}$`), oneRegExp = new RegExp(`^${DSL.one.l}[a-zA-Z$_][\\w$]*${DSL.one.r}$`), multiTwoRegExp = new RegExp(`${DSL.two.l}[a-zA-Z$_][\\w$]*${DSL.two.r}`, "g"), multiOneRegExp = new RegExp(`${DSL.one.l}[a-zA-Z$_][\\w$]*${DSL.one.r}`, "g"), $ = [
     "鬼片出现了！",
-    "Access to deleted property was blocked: ",
+    "",
     ", automatically treated as one-way binding.",
-    "function"
+    "function",
+    "DO NOT USE ",
+    " in Dynamic instance.",
+    " is a reserved property."
 ];
-class App {
-    constructor(rootNode) {
-        _App_instances.add(this);
-        _App_rootNode.set(this, void 0);
-        _App_aOProcessorStore.set(this, new WeakMap());
-        _App_dOProcessorStore.set(this, new WeakMap());
-        _App_cOProcessorStore.set(this, new WeakMap());
-        _App_observer.set(this, new MutationObserver((records) => {
-            for (let i = 0; i < records.length; i++) {
-                const record = records[i], type = record.type;
-                if (type == "attributes" && __classPrivateFieldGet(this, _App_aOProcessorStore, "f").has(record.target))
-                    __classPrivateFieldGet(this, _App_aOProcessorStore, "f").get(record.target)(record);
-                else if (type == "characterData" && __classPrivateFieldGet(this, _App_dOProcessorStore, "f").has(record.target))
-                    __classPrivateFieldGet(this, _App_dOProcessorStore, "f").get(record.target)(record);
-                else if (type == "childList" && __classPrivateFieldGet(this, _App_cOProcessorStore, "f").has(record.target))
-                    __classPrivateFieldGet(this, _App_cOProcessorStore, "f").get(record.target)(record);
-            }
-        }));
-        _App_data.set(this, {});
-        _App_proxy.set(this, new Proxy(__classPrivateFieldGet(this, _App_data, "f"), {
-            get(sharpData, property, proxy) {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                if (property in sharpData && !sharpData[property].deleted) {
-                    let result;
-                    if (typeof sharpData[property].value == s[3])
-                        result = sharpData[property].cache;
-                    else
-                        result = sharpData[property].value;
-                    return result;
-                }
-                else if (!(property in sharpData))
-                    return undefined;
-                else if (sharpData[property].deleted)
-                    console.warn(`${s[1]}${property}.`);
-                else
-                    console.error(s[0], "get", property);
-            },
-            set(sharpData, property, newValue, proxy) {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                if (property in sharpData && !sharpData[property].deleted) {
-                    const oldValue = sharpData[property].value;
-                    if (oldValue !== newValue) {
-                        sharpData[property].value = newValue;
-                        processComputedProperty(sharpData[property]);
-                        const exportInstances = sharpData[property].shouldExports;
-                        for (let i = 0; i < exportInstances.length; i++)
-                            exportInstances[i][0].call(proxy, exportInstances[i], oldValue);
-                        for (let i = 0; i < sharpData[property].shouldUpdates.length; i++)
-                            dfsUpdate(sharpData[property].shouldUpdates[i]);
-                        function dfsUpdate(prop) {
-                            if (prop in sharpData && typeof sharpData[prop].value == s[3]) {
-                                const dfsOldValue = sharpData[prop].cache;
-                                sharpData[prop].cache = sharpData[prop].value.call(proxy);
-                                const exportInstances = sharpData[prop].shouldExports;
-                                for (let i = 0; i < exportInstances.length; i++)
-                                    exportInstances[i][0].call(proxy, exportInstances[i], dfsOldValue);
-                                for (let i = 0; i < sharpData[prop].shouldUpdates.length; i++)
-                                    dfsUpdate(sharpData[prop].shouldUpdates[i]);
-                            }
-                        }
-                    }
-                    else
-                        console.log(`Update skipped in ${property} for same value ${newValue}`);
-                }
-                else if (!(property in sharpData)) {
-                    sharpData[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
-                    processComputedProperty(sharpData[property]);
-                }
-                else if (sharpData[property].deleted)
-                    console.warn(`${s[1]}${property}.`);
-                else
-                    console.error(s[0], "set", property);
-                return true;
-                function processComputedProperty(dataInstance) {
-                    property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                    if (typeof newValue == s[3]) {
-                        _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.checkArrowFunction(newValue);
-                        dataInstance.cache = newValue.call(proxy);
-                        const shouldUpdateThis = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
-                        for (let i = 0; i < shouldUpdateThis.length; i++) {
-                            if (!(shouldUpdateThis[i] in sharpData))
-                                proxy[shouldUpdateThis[i]] = undefined;
-                            if (sharpData[shouldUpdateThis[i]].shouldUpdates.indexOf(property) == -1)
-                                sharpData[shouldUpdateThis[i]].shouldUpdates.push(property);
-                        }
-                    }
-                    else
-                        delete dataInstance.cache;
-                }
-            },
-            deleteProperty: (sharpData, property) => {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                const exists = property in sharpData;
-                if (exists) {
-                    __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
-                    sharpData[property].deleted = true;
-                }
-                return exists;
-            }
-        }));
-        _App_methods.set(this, {});
-        _App_methodsProxy.set(this, new Proxy(__classPrivateFieldGet(this, _App_methods, "f"), {
-            get: (sharpMethods, property, proxy) => {
-                property = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.eliminateSymbol(property);
-                if (property in sharpMethods)
-                    return sharpMethods[property].bind(__classPrivateFieldGet(this, _App_proxy, "f"));
-                else
-                    return undefined;
-            }
-        }));
-        __classPrivateFieldSet(this, _App_rootNode, _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode), "f");
-        console.info("creating new dynamic instance with rootNode", rootNode);
-        __classPrivateFieldGet(this, _App_instances, "m", _App_hydrate).call(this, __classPrivateFieldGet(this, _App_rootNode, "f"));
-        __classPrivateFieldGet(this, _App_observer, "f").observe(__classPrivateFieldGet(this, _App_rootNode, "f"), {
-            attributes: true,
-            attributeOldValue: true,
-            characterData: true,
-            characterDataOldValue: true,
-            childList: true,
-            subtree: true
-        });
-    }
-    get rootNode() { return __classPrivateFieldGet(this, _App_rootNode, "f"); }
-    get data() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
-    get _() { return __classPrivateFieldGet(this, _App_proxy, "f"); }
-    addExport(dataProperty, func, target) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[dataProperty], func, target); }
-    removeExport(dataProperty, func) { return _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.removeExport(__classPrivateFieldGet(this, _App_data, "f")[dataProperty], func); }
-    getExports(dataProperty) { return [...__classPrivateFieldGet(this, _App_data, "f")[dataProperty].shouldExports]; }
-    get methods() { return __classPrivateFieldGet(this, _App_methodsProxy, "f"); }
-    get $() { return __classPrivateFieldGet(this, _App_methodsProxy, "f"); }
-    hydrate(node) {
-        node = _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToNode(node);
-        if (__classPrivateFieldGet(this, _App_rootNode, "f").contains(node))
-            __classPrivateFieldGet(this, _App_instances, "m", _App_hydrate).call(this, node);
-        else
-            _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.E("node", undefined, node, "the input node must be a descendant of the rootNode");
-    }
-}
-_App_rootNode = new WeakMap(), _App_aOProcessorStore = new WeakMap(), _App_dOProcessorStore = new WeakMap(), _App_cOProcessorStore = new WeakMap(), _App_observer = new WeakMap(), _App_data = new WeakMap(), _App_proxy = new WeakMap(), _App_methods = new WeakMap(), _App_methodsProxy = new WeakMap(), _App_instances = new WeakSet(), _App_hydrate = function _App_hydrate(node) {
-    if (node instanceof Element) {
-        const data = this.data, methods = this.methods;
-        _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.noErrorDefineProperties(node, {
-            data: {
-                configurable: false,
-                enumerable: true,
-                get() { return data; }
-            },
-            _: {
-                configurable: false,
-                enumerable: true,
-                get() { return data; }
-            },
-            methods: {
-                configurable: false,
-                enumerable: true,
-                get() { return methods; }
-            },
-            $: {
-                configurable: false,
-                enumerable: true,
-                get() { return methods; }
-            }
-        });
-        const attrs = Array.from(node.attributes), children = Array.from(node.childNodes);
-        const tasks = [];
-        for (let i = 0; i < attrs.length; i++) {
-            let name = attrs[i].name, value = attrs[i].value;
-            const nameOne = !!name.match(oneWayBindingRegExp), nameTwo = !!name.match(twoWayBindingRegExp), valueOne = !!value.match(oneWayBindingRegExp), valueTwo = !!value.match(twoWayBindingRegExp), nameInserted = nameOne || nameTwo, valueInserted = valueOne || valueTwo;
-            let name_property, value_property, processed_avoidance_name, processed_avoidance_defaultTrap_name;
-            if (nameTwo)
-                console.warn(`It's not rational to declare a two-way binding attribute name: ${name}${s[2]} Use "${HTMLDSLs.one.l}${name.substring(2, name.length - 2)}${HTMLDSLs.one.r}" instead.`);
-            if (nameInserted && valueInserted)
-                console.warn("Cannot set an attribute with both name and value dynamic. Dynamic will make only attribute name dynamic.");
-            if (nameInserted) {
-                name_property = name.substring(2, name.length - 2);
-                const symbol = Symbol();
-                const funcObj = {
-                    [symbol]: function (exportInstance, oldValue) {
-                        const newValue = this[name_property];
-                        if (oldValue !== newValue) {
-                            const thisNode = exportInstance[1], valueOfAttr = thisNode.getAttribute(oldValue);
-                            thisNode.removeAttribute(oldValue);
-                            if (newValue !== "") {
-                                if (typeof newValue == "string" && newValue !== newValue.toLowerCase())
-                                    console.warn(`Attribute names are case insensitive, don't pass string with upper-case letters which may cause bugs: ${newValue}`);
-                                thisNode.setAttribute(newValue, valueOfAttr);
-                            }
-                        }
-                    }
-                };
-                if (!(name_property in __classPrivateFieldGet(this, _App_proxy, "f")))
-                    __classPrivateFieldGet(this, _App_proxy, "f")[name_property] = undefined;
-                _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[name_property], funcObj[symbol], node);
-            }
-            else if (valueInserted) {
-                value_property = value.substring(2, value.length - 2);
-                if (name[name.length - 1] == HTMLDSLs.attr)
-                    processed_avoidance_name = name.substring(0, name.length - 1);
-                else
-                    processed_avoidance_name = name;
-                let funcObj = {};
-                if ((processed_avoidance_name == "value" || processed_avoidance_name == "checked")
-                    && node instanceof HTMLInputElement
-                    && processed_avoidance_name in node)
-                    funcObj.func = function (exportInstance, oldValue) {
-                        const newValue = this[value_property];
-                        if (oldValue !== newValue)
-                            node[processed_avoidance_name] = newValue;
-                    };
-                else {
-                    if (node instanceof HTMLInputElement) {
-                        if (processed_avoidance_name == "defaultvalue" && "defaultValue" in node)
-                            processed_avoidance_defaultTrap_name = "value";
-                        else if (processed_avoidance_name == "defaultchecked" && "defaultChecked" in node)
-                            processed_avoidance_defaultTrap_name = "checked";
-                        else
-                            processed_avoidance_defaultTrap_name = processed_avoidance_name;
-                    }
-                    else
-                        processed_avoidance_defaultTrap_name = processed_avoidance_name;
-                    funcObj.func = function (exportInstance, oldValue) {
-                        const newValue = this[value_property];
-                        if (oldValue !== newValue) {
-                            if (newValue === null)
-                                node.removeAttribute(processed_avoidance_defaultTrap_name);
-                            else
-                                node.setAttribute(processed_avoidance_defaultTrap_name, newValue);
-                        }
-                    };
-                }
-                if (!(value_property in __classPrivateFieldGet(this, _App_proxy, "f")))
-                    __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = undefined;
-                _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[value_property], funcObj.func, node);
-                if (valueTwo) {
-                    if (node instanceof HTMLInputElement) {
-                        if (name == "value") {
-                            node.addEventListener("input", (e) => {
-                                if (e.target === node)
-                                    __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = node.value;
-                            });
-                        }
-                        else if (name == "checked") {
-                            node.addEventListener("input", (e) => {
-                                if (e.target === node)
-                                    __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = node.checked;
-                            });
-                        }
-                    }
-                    else {
-                        __classPrivateFieldGet(this, _App_aOProcessorStore, "f").set(node, (record) => {
-                            if (record.attributeName === processed_avoidance_defaultTrap_name
-                                && record.target.getAttribute(record.attributeName) !== __classPrivateFieldGet(this, _App_proxy, "f")[value_property])
-                                __classPrivateFieldGet(this, _App_proxy, "f")[value_property] = record.target.getAttribute(record.attributeName);
-                        });
-                    }
-                }
-            }
-            if (nameInserted)
-                tasks.push([1, name, name_property, value]);
-            else if (valueInserted)
-                tasks.push([2, name, processed_avoidance_defaultTrap_name, value_property]);
+function App(rootNode_, options_) {
+    const rootNode = _utils_index__WEBPACK_IMPORTED_MODULE_0__.arguments.reduceToElement(rootNode_), dataStore = {}, publics = {
+        rootNode,
+        hydrate,
+        addExport,
+        removeExport,
+        getExports,
+        connect,
+        disConnect,
+        get keys() { return [...Object.keys(publics), ...Object.keys(dataStore)]; },
+    }, insertStore = new WeakMap();
+    const aOProcessorStore = new WeakMap();
+    const dOProcessorStore = new WeakMap();
+    const cOProcessorStore = new WeakMap();
+    const observer = new MutationObserver((records) => {
+        for (let i = 0; i < records.length; i++) {
+            const record = records[i], type = record.type;
+            if (type == "attributes" && aOProcessorStore.has(record.target))
+                aOProcessorStore.get(record.target)(record);
+            else if (type == "characterData" && dOProcessorStore.has(record.target))
+                dOProcessorStore.get(record.target)(record);
+            else if (type == "childList" && cOProcessorStore.has(record.target))
+                cOProcessorStore.get(record.target)(record);
         }
-        for (let i = 0; i < tasks.length; i++) {
-            const taskInstance = tasks[i];
-            if (taskInstance[0] == 1) {
-                node.removeAttribute(taskInstance[1]);
-                node.setAttribute(__classPrivateFieldGet(this, _App_proxy, "f")[taskInstance[2]], taskInstance[3]);
+    });
+    function addExport() {
+    }
+    function removeExport() {
+    }
+    function getExports() {
+    }
+    function connect() {
+    }
+    function disConnect() {
+    }
+    const proxy = new Proxy(dataStore, {
+        get(_target, property, proxy) {
+            if (property in publics)
+                return publics[property];
+            else if (property in dataStore) {
+                if (typeof dataStore[property].value == $[3])
+                    return dataStore[property].cache;
+                else
+                    return dataStore[property].value;
             }
-            else if (taskInstance[0] == 2) {
-                if (taskInstance[2] === undefined)
-                    node[taskInstance[1]] = __classPrivateFieldGet(this, _App_proxy, "f")[taskInstance[3]];
-                else {
-                    node.removeAttribute(taskInstance[1]);
-                    node.setAttribute(taskInstance[2], __classPrivateFieldGet(this, _App_proxy, "f")[taskInstance[3]]);
+            else
+                return undefined;
+        },
+        set(_target, property, newValue, proxy) {
+            if (property in publics)
+                _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${property}${$[6]}`);
+            else if (property in dataStore) {
+                const oldValue = dataStore[property].value;
+                if (oldValue !== newValue || typeof newValue == $[3]) {
+                    dataStore[property].value = newValue;
+                    processComputedProperty(dataStore[property]);
+                    const exportInstances = dataStore[property].shouldExports;
+                    for (let i = 0; i < exportInstances.length; i++)
+                        exportInstances[i][0].call(proxy, exportInstances[i], oldValue);
+                    for (let i = 0; i < dataStore[property].shouldUpdates.length; i++)
+                        dfsUpdate(dataStore[property].shouldUpdates[i]);
+                    function dfsUpdate(prop) {
+                        if (prop in dataStore && typeof dataStore[prop].value == $[3]) {
+                            const dfsOldValue = dataStore[prop].cache;
+                            dataStore[prop].cache = dataStore[prop].value.call(proxy);
+                            const exportInstances = dataStore[prop].shouldExports;
+                            for (let i = 0; i < exportInstances.length; i++)
+                                exportInstances[i][0].call(proxy, exportInstances[i], dfsOldValue);
+                            for (let i = 0; i < dataStore[prop].shouldUpdates.length; i++)
+                                dfsUpdate(dataStore[prop].shouldUpdates[i]);
+                        }
+                    }
                 }
             }
-        }
-        for (let i = 0; i < children.length; i++)
-            __classPrivateFieldGet(this, _App_instances, "m", _App_hydrate).call(this, children[i]);
-    }
-    else if (node instanceof Text) {
-        if (node.textContent) {
-            const text = node.textContent, twoWayInserts = [...text.matchAll(nStwoWayBindingRegExp)], inserts = [...text.matchAll(nSoneWayBindingRegExp), ...twoWayInserts], matchTwoWayBinding = !!text.match(twoWayBindingRegExp), matchOneWayBinding = !!text.match(oneWayBindingRegExp);
-            if (twoWayInserts.length > 0 && !matchTwoWayBinding)
-                console.warn(`Two-way bindings in "${text}" cannot be used in textContent template${s[2]}`);
-            if (matchTwoWayBinding) {
-                if (!(node.parentElement instanceof HTMLElement))
-                    console.warn("It's no use adding a two-way binding insert to an SVGElement, but dynamic will continue anyway.");
-                const property = text.substring(2, text.length - 2), parent = node.parentNode;
-                if (parent.childNodes.length == 1) {
+            else {
+                dataStore[property] = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.createData(newValue);
+                processComputedProperty(dataStore[property]);
+            }
+            return true;
+            function processComputedProperty(dataInstance) {
+                if (typeof newValue == $[3]) {
+                    _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.checkArrowFunction(newValue);
+                    dataInstance.cache = newValue.call(proxy);
+                    const shouldUpdateThese = _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.detectShouldUpdate(Function.prototype.toString.call(newValue));
+                    for (let i = 0; i < shouldUpdateThese.length; i++) {
+                        if (!(shouldUpdateThese[i] in dataStore))
+                            proxy[shouldUpdateThese[i]] = undefined;
+                        if (dataStore[shouldUpdateThese[i]].shouldUpdates.indexOf(property) == -1)
+                            dataStore[shouldUpdateThese[i]].shouldUpdates.push(property);
+                    }
+                }
+                else
+                    delete dataInstance.cache;
+            }
+        },
+        deleteProperty(_target, property) {
+            const exists = property in dataStore;
+            if (property in publics)
+                _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${property}${$[6]}`);
+            else if (exists)
+                delete dataStore[property];
+            return exists;
+        },
+        defineProperty() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}defineProperty${$[5]}`); return false; },
+        preventExtensions() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}preventExtensions${$[5]}`); return false; },
+        setPrototypeOf() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}setPrototypeOf${$[5]}`); return false; }
+    });
+    function hydrate(node) {
+        if (node instanceof Element) {
+            const attrs = Array.from(node.attributes), children = Array.from(node.childNodes);
+            const tasks = [];
+            for (let i = 0; i < attrs.length; i++) {
+                let name = attrs[i].name, value = attrs[i].value;
+                const nameOne = !!name.match(oneRegExp), nameTwo = !!name.match(twoRegExp), valueOne = !!value.match(oneRegExp), valueTwo = !!value.match(twoRegExp), nameInserted = nameOne || nameTwo, valueInserted = valueOne || valueTwo;
+                let name_property, value_property, processed_avoidance_name, processed_avoidance_defaultTrap_name;
+                if (nameTwo)
+                    console.warn(`It's not rational to declare a two-way binding attribute name: ${name}${$[2]} Use "${DSL.one.l}${name.substring(2, name.length - 2)}${DSL.one.r}" instead.`);
+                if (nameInserted && valueInserted)
+                    console.warn("Cannot set an attribute with both name and value dynamic. Dynamic will make only attribute name dynamic.");
+                if (nameInserted) {
+                    name_property = name.substring(2, name.length - 2);
                     const symbol = Symbol();
                     const funcObj = {
-                        [symbol]: function () {
-                            const data = this[property];
-                            if (parent.textContent !== data) {
-                                if (data instanceof Element || (data instanceof Array && data[0] instanceof Element)) {
-                                    parent.innerHTML = "";
-                                    if (data instanceof Element)
-                                        parent.appendChild(data);
-                                    else
-                                        for (let i = 0; i < data.length; i++) {
-                                            if (data[i] instanceof Element)
-                                                parent.appendChild(data[i]);
-                                            else
-                                                parent.appendChild(document.createTextNode(_utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data[i])));
-                                        }
-                                    return;
+                        [symbol]: function (exportInstance, oldValue) {
+                            const newValue = this[name_property];
+                            if (oldValue !== newValue) {
+                                const thisNode = exportInstance[1], valueOfAttr = thisNode.getAttribute(oldValue);
+                                thisNode.removeAttribute(oldValue);
+                                if (newValue !== "") {
+                                    if (typeof newValue == "string" && newValue !== newValue.toLowerCase())
+                                        console.warn(`Attribute names are case insensitive, don't pass string with upper-case letters which may cause bugs: ${newValue}`);
+                                    thisNode.setAttribute(newValue, valueOfAttr);
                                 }
-                                else
-                                    parent.textContent = data;
                             }
                         }
                     };
-                    if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
-                        __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
-                    _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[property], funcObj[symbol], node);
-                    parent.addEventListener("input", (e) => {
-                        if (e.target === parent && parent.textContent !== __classPrivateFieldGet(this, _App_proxy, "f")[property])
-                            __classPrivateFieldGet(this, _App_proxy, "f")[property] = parent.textContent;
-                    });
-                    node.textContent = __classPrivateFieldGet(this, _App_proxy, "f")[property];
+                    if (!(name_property in proxy))
+                        proxy[name_property] = undefined;
+                    _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(proxy, dataStore[name_property], funcObj[symbol], node);
                 }
-                else
-                    console.error("The parent element of a two-way binding text node must only have this text node.");
-            }
-            else if (inserts.length > 0) {
-                const properties = [], parent = node.parentNode, nextNode = node.nextSibling;
-                for (let i = 0; i < inserts.length; i++) {
-                    const property = inserts[i][0].substring(2, inserts[i][0].length - 2);
-                    properties.push(property);
-                    if (!(property in __classPrivateFieldGet(this, _App_proxy, "f")))
-                        __classPrivateFieldGet(this, _App_proxy, "f")[property] = undefined;
-                }
-                const NRproperties = _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(properties);
-                const symbol = Symbol();
-                const funcObj = {
-                    [symbol]: function (exportInstance) {
-                        const data = this[NRproperties[0]];
-                        if ((data instanceof Element
-                            || (data instanceof Array && data[0] instanceof Element))
-                            && matchOneWayBinding) {
-                            exportInstance[2] = true;
-                            console.log(NRproperties);
-                            parent.innerHTML = "";
-                            if (data instanceof Element)
-                                parent.appendChild(data);
+                else if (valueInserted) {
+                    value_property = value.substring(2, value.length - 2);
+                    if (name[name.length - 1] == DSL.attr)
+                        processed_avoidance_name = name.substring(0, name.length - 1);
+                    else
+                        processed_avoidance_name = name;
+                    let funcObj = {};
+                    if ((processed_avoidance_name == "value" || processed_avoidance_name == "checked")
+                        && node instanceof HTMLInputElement
+                        && processed_avoidance_name in node)
+                        funcObj.func = function (exportInstance, oldValue) {
+                            const newValue = this[value_property];
+                            if (oldValue !== newValue)
+                                node[processed_avoidance_name] = newValue;
+                        };
+                    else {
+                        if (node instanceof HTMLInputElement) {
+                            if (processed_avoidance_name == "defaultvalue" && "defaultValue" in node)
+                                processed_avoidance_defaultTrap_name = "value";
+                            else if (processed_avoidance_name == "defaultchecked" && "defaultChecked" in node)
+                                processed_avoidance_defaultTrap_name = "checked";
                             else
-                                for (let i = 0; i < data.length; i++) {
-                                    if (data[i] instanceof Element)
-                                        parent.appendChild(data[i]);
-                                    else
-                                        parent.appendChild(document.createTextNode(_utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data[i])));
-                                }
+                                processed_avoidance_defaultTrap_name = processed_avoidance_name;
+                        }
+                        else
+                            processed_avoidance_defaultTrap_name = processed_avoidance_name;
+                        funcObj.func = function (exportInstance, oldValue) {
+                            const newValue = this[value_property];
+                            if (oldValue !== newValue) {
+                                if (newValue === null)
+                                    node.removeAttribute(processed_avoidance_defaultTrap_name);
+                                else
+                                    node.setAttribute(processed_avoidance_defaultTrap_name, newValue);
+                            }
+                        };
+                    }
+                    if (!(value_property in proxy))
+                        proxy[value_property] = undefined;
+                    _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(proxy, dataStore[value_property], funcObj.func, node);
+                    if (valueTwo) {
+                        if (node instanceof HTMLInputElement) {
+                            if (name == "value") {
+                                node.addEventListener("input", (e) => {
+                                    if (e.target === node)
+                                        proxy[value_property] = node.value;
+                                });
+                            }
+                            else if (name == "checked") {
+                                node.addEventListener("input", (e) => {
+                                    if (e.target === node)
+                                        proxy[value_property] = node.checked;
+                                });
+                            }
                         }
                         else {
-                            let template = text;
-                            if (exportInstance[2]) {
-                                parent.innerHTML = "";
-                                exportInstance[1] = document.createTextNode(template);
-                                parent.insertBefore(exportInstance[1], nextNode);
-                            }
-                            else if (!document.contains(exportInstance[1])) {
-                                exportInstance[1] = document.createTextNode(template);
-                                parent.insertBefore(exportInstance[1], nextNode);
-                            }
-                            let thisNode = exportInstance[1];
-                            exportInstance[2] = false;
-                            for (let i = 0; i < NRproperties.length; i++) {
-                                let data = this[NRproperties[i]];
-                                if (typeof data == "object")
-                                    data = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data);
-                                template = template
-                                    .replaceAll(`${HTMLDSLs.one.l}${NRproperties[i]}${HTMLDSLs.one.r}`, data)
-                                    .replaceAll(`${HTMLDSLs.two.l}${NRproperties[i]}${HTMLDSLs.two.r}`, data);
-                            }
-                            if (thisNode.textContent !== template)
-                                thisNode.textContent = template;
+                            aOProcessorStore.set(node, (record) => {
+                                if (record.attributeName === processed_avoidance_defaultTrap_name
+                                    && record.target.getAttribute(record.attributeName) !== proxy[value_property])
+                                    proxy[value_property] = record.target.getAttribute(record.attributeName);
+                            });
                         }
                     }
-                };
-                for (let i = 0; i < NRproperties.length; i++)
-                    _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(__classPrivateFieldGet(this, _App_proxy, "f"), __classPrivateFieldGet(this, _App_data, "f")[NRproperties[i]], funcObj[symbol], node);
+                }
+                if (nameInserted)
+                    tasks.push([1, name, name_property, value]);
+                else if (valueInserted)
+                    tasks.push([2, name, processed_avoidance_defaultTrap_name, value_property]);
             }
+            for (let i = 0; i < tasks.length; i++) {
+                const taskInstance = tasks[i];
+                if (taskInstance[0] == 1) {
+                    node.removeAttribute(taskInstance[1]);
+                    node.setAttribute(proxy[taskInstance[2]], taskInstance[3]);
+                }
+                else if (taskInstance[0] == 2) {
+                    if (taskInstance[2] === undefined)
+                        node[taskInstance[1]] = proxy[taskInstance[3]];
+                    else {
+                        node.removeAttribute(taskInstance[1]);
+                        node.setAttribute(taskInstance[2], proxy[taskInstance[3]]);
+                    }
+                }
+            }
+            for (let i = 0; i < children.length; i++)
+                hydrate(children[i]);
+        }
+        else if (node instanceof Text) {
+            if (_utils_index__WEBPACK_IMPORTED_MODULE_0__.element.processNLIText(node) !== null && node.textContent) {
+                const text = node.textContent, twoWayInserts = [...text.matchAll(multiTwoRegExp)], totalInserts = [...text.matchAll(multiOneRegExp), ...twoWayInserts], matchtwo = !!text.match(twoRegExp), matchone = !!text.match(oneRegExp);
+                if (twoWayInserts.length > 0 && !matchtwo)
+                    console.warn(`Two-way bindings in "${text}" cannot be used in textContent template${$[2]}`);
+                if (matchtwo) {
+                    if (!(node.parentElement instanceof HTMLElement))
+                        console.warn("It's no use adding a two-way binding to an SVGElement but dynamic will continue.");
+                    const property = text.substring(2, text.length - 2), parent = node.parentNode;
+                    if (parent.childNodes.length == 1) {
+                        const symbol = Symbol();
+                        const funcObj = {
+                            [symbol]: function () {
+                            }
+                        };
+                        if (!(property in proxy))
+                            proxy[property] = undefined;
+                        _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(proxy, dataStore[property], funcObj[symbol], node);
+                        parent.addEventListener("input", (e) => {
+                            if (e.target === parent && parent.textContent !== proxy[property])
+                                proxy[property] = parent.textContent;
+                        });
+                        node.textContent = proxy[property];
+                    }
+                    else
+                        console.error("The parent element of a two-way binding text node must only have this text node.");
+                }
+                else if (totalInserts.length > 0) {
+                    const parent = node.parentNode, nextNode = node.nextSibling, properties = (() => {
+                        const result = [];
+                        for (let i = 0; i < totalInserts.length; i++) {
+                            const property = totalInserts[i][0].substring(2, totalInserts[i][0].length - 2);
+                            result.push(property);
+                            if (!(property in dataStore))
+                                proxy[property] = undefined;
+                        }
+                        return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat(result);
+                    })(), symbol = Symbol();
+                    if (totalInserts.length == 1 && 1 != 1) {}
+                    else {
+                        const funcObj = {
+                            [symbol]: function (exportInstance) {
+                                let template = text;
+                                if (!document.contains(exportInstance[1])) {
+                                    exportInstance[1] = document.createTextNode(template);
+                                    parent?.insertBefore(exportInstance[1], nextNode);
+                                }
+                                let thisNode = exportInstance[1];
+                                for (let i = 0; i < properties.length; i++) {
+                                    let data = this[properties[i]];
+                                    if (typeof data == "object")
+                                        data = _utils_index__WEBPACK_IMPORTED_MODULE_1__.misc.advancedStringify(data);
+                                    template = template
+                                        .replaceAll(`${DSL.one.l}${properties[i]}${DSL.one.r}`, data)
+                                        .replaceAll(`${DSL.two.l}${properties[i]}${DSL.two.r}`, data);
+                                }
+                                if (thisNode.textContent !== template)
+                                    thisNode.textContent = template;
+                            }
+                        };
+                        for (let i = 0; i < properties.length; i++)
+                            _utils_index__WEBPACK_IMPORTED_MODULE_1__.data.addExport(proxy, dataStore[properties[i]], funcObj[symbol], node);
+                    }
+                }
+                else {
+                    console.log(node, text, twoWayInserts, totalInserts, matchone, matchtwo);
+                }
+            }
+            else
+                node.remove();
         }
     }
-};
+    console.info("creating new dynamic instance with rootNode", rootNode);
+    hydrate(rootNode);
+    observer.observe(rootNode, {
+        attributes: true,
+        attributeOldValue: true,
+        characterData: true,
+        characterDataOldValue: true,
+        childList: true,
+        subtree: true
+    });
+    return proxy;
+}
 
 
 /***/ }),
@@ -457,34 +372,16 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const cI = clearInterval;
-var dtInterval;
-function __disableDevTools__() {
-    dtInterval = (() => {
-        return setInterval(() => {
-            debugger;
-        }, 20);
-    })();
-    clearInterval = (id) => {
-        if (id != dtInterval)
-            cI.call(window, id);
-    };
-}
-function __enableDevTools__() {
-    clearInterval = cI;
-    clearInterval(dtInterval);
-}
-const Dynamic = (rootNode) => { return new _app__WEBPACK_IMPORTED_MODULE_1__["default"](rootNode); };
-Dynamic.template = _template__WEBPACK_IMPORTED_MODULE_2__;
-Dynamic.spa = _spa__WEBPACK_IMPORTED_MODULE_3__;
-Dynamic.manifest = _manifest__WEBPACK_IMPORTED_MODULE_4__;
-Dynamic.e = (s, scope) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e(s, scope); };
-Dynamic.render = (args) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.render(args.HTML, args.element, args.insertAfter, args.append); };
-Dynamic.toHTML = (HTML) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.toHTML(HTML); };
-Dynamic.hatch = (element, remove) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.hatch(element, remove); };
-Dynamic.compose = () => { };
-Dynamic.__disableDevTools__ = __disableDevTools__;
-Dynamic.__enableDevTools__ = __enableDevTools__;
+const Dynamic$ = _app__WEBPACK_IMPORTED_MODULE_1__["default"];
+Dynamic$.template = _template__WEBPACK_IMPORTED_MODULE_2__;
+Dynamic$.spa = _spa__WEBPACK_IMPORTED_MODULE_3__;
+Dynamic$.manifest = _manifest__WEBPACK_IMPORTED_MODULE_4__;
+Dynamic$.e = _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.e;
+Dynamic$.render = (args) => { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.render(args.HTML, args.element, args.insertAfter, args.append); };
+Dynamic$.toHTML = _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.toHTML;
+Dynamic$.hatch = _utils_index__WEBPACK_IMPORTED_MODULE_0__.element.hatch;
+Dynamic$.compose = () => { };
+const Dynamic = Dynamic$;
 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.constantize(Dynamic);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dynamic);
 
@@ -631,7 +528,6 @@ const FtoString = Function.prototype.toString;
 function createData(value, shouldUpdate, shouldExport) {
     const result = {
         value,
-        deleted: false,
         shouldUpdates: shouldUpdate || [],
         shouldExports: shouldExport || []
     };
@@ -696,8 +592,6 @@ function detectShouldUpdate(string) {
             inQuote.double = !inQuote.double;
         if (string[i] == "'" && !inQuote.double && !inQuote.reversed)
             inQuote.single = !inQuote.single;
-        if (inQuote.reversed && string[i] == "$" && string[i + 1] == "{")
-            processTemplate(i);
         if (!string[i].match(/[\w$]/) && subCursor != 0 && !inQuote.single && !inQuote.double && !inQuote.reversed) {
             result.push(string.substring(subCursor, i));
             subCursor = 0;
@@ -726,14 +620,10 @@ function detectShouldUpdate(string) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "data": () => (/* reexport module object */ _data__WEBPACK_IMPORTED_MODULE_0__),
-/* harmony export */   "misc": () => (/* reexport module object */ _misc__WEBPACK_IMPORTED_MODULE_1__),
-/* harmony export */   "type": () => (/* reexport module object */ _type__WEBPACK_IMPORTED_MODULE_2__)
+/* harmony export */   "misc": () => (/* reexport module object */ _misc__WEBPACK_IMPORTED_MODULE_1__)
 /* harmony export */ });
 /* harmony import */ var _data__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./data */ "./src/utils/data.ts");
 /* harmony import */ var _misc__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./misc */ "./src/utils/misc.ts");
-/* harmony import */ var _type__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./type */ "./src/utils/type.ts");
-
-
 
 
 
@@ -818,18 +708,6 @@ function noErrorDefineProperties(obj, properties) {
 
 /***/ }),
 
-/***/ "./src/utils/type.ts":
-/*!***************************!*\
-  !*** ./src/utils/type.ts ***!
-  \***************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-
-
-
-/***/ }),
-
 /***/ "../utils/arguments.ts":
 /*!*****************************!*\
   !*** ../utils/arguments.ts ***!
@@ -873,6 +751,59 @@ function reduceToNode(input) {
 
 /***/ }),
 
+/***/ "../utils/devTools.ts":
+/*!****************************!*\
+  !*** ../utils/devTools.ts ***!
+  \****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ devTools)
+/* harmony export */ });
+/* harmony import */ var _index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./index */ "../utils/index.ts");
+var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var _devTools_dtInterval;
+
+const cI = clearInterval;
+class devTools {
+    constructor() {
+        _devTools_dtInterval.set(this, 0);
+        this.disable();
+    }
+    enable() {
+        clearInterval = cI;
+        clearInterval(__classPrivateFieldGet(this, _devTools_dtInterval, "f"));
+    }
+    disable() {
+        if (clearInterval !== cI)
+            _index__WEBPACK_IMPORTED_MODULE_0__.generic.EE("DevTools has been disabled.");
+        __classPrivateFieldSet(this, _devTools_dtInterval, (() => {
+            return setInterval(() => {
+                debugger;
+            }, 20);
+        })(), "f");
+        clearInterval = (id) => {
+            if (id != __classPrivateFieldGet(this, _devTools_dtInterval, "f"))
+                cI.call(window, id);
+        };
+    }
+}
+_devTools_dtInterval = new WeakMap();
+
+
+/***/ }),
+
 /***/ "../utils/element.ts":
 /*!***************************!*\
   !*** ../utils/element.ts ***!
@@ -887,6 +818,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "isChild": () => (/* binding */ isChild),
 /* harmony export */   "isDescendant": () => (/* binding */ isDescendant),
 /* harmony export */   "isInDocument": () => (/* binding */ isInDocument),
+/* harmony export */   "processNLIText": () => (/* binding */ processNLIText),
 /* harmony export */   "render": () => (/* binding */ render),
 /* harmony export */   "toHTML": () => (/* binding */ toHTML)
 /* harmony export */ });
@@ -968,6 +900,26 @@ function render(HTML, element, insertAfter, append) {
         for (let i = 0; i < html.length; i++)
             element.append(html[i]);
     return html;
+}
+function processNLIText(textNode) {
+    const textContent = textNode.textContent, signContent = textContent.replace(/\n\s*/g, ""), parent = textNode.parentElement;
+    const des = document.designMode;
+    if ((parent !== null && parent.tagName == "TEXTAREA")
+        || (parent instanceof HTMLElement && parent.isContentEditable)
+        || (des == "on" || des == "ON"))
+        return textContent;
+    else {
+        if (signContent === "") {
+            textNode.remove();
+            return null;
+        }
+        else if (signContent !== textContent) {
+            textNode.textContent = textContent.replace(/\n\s*/g, " ");
+            return textNode.textContent;
+        }
+        else
+            return textContent;
+    }
 }
 
 
@@ -1055,12 +1007,16 @@ function noRepeat(input) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "arguments": () => (/* reexport module object */ _arguments__WEBPACK_IMPORTED_MODULE_2__),
+/* harmony export */   "devTools": () => (/* reexport safe */ _devTools__WEBPACK_IMPORTED_MODULE_3__["default"]),
 /* harmony export */   "element": () => (/* reexport module object */ _element__WEBPACK_IMPORTED_MODULE_1__),
 /* harmony export */   "generic": () => (/* reexport module object */ _generic__WEBPACK_IMPORTED_MODULE_0__)
 /* harmony export */ });
 /* harmony import */ var _generic__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./generic */ "../utils/generic.ts");
 /* harmony import */ var _element__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./element */ "../utils/element.ts");
 /* harmony import */ var _arguments__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./arguments */ "../utils/arguments.ts");
+/* harmony import */ var _devTools__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./devTools */ "../utils/devTools.ts");
+
+
 
 
 

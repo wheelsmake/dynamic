@@ -1,14 +1,2 @@
-export default class App {
-    #private;
-    constructor(rootNode: Elementy);
-    get rootNode(): Element;
-    get data(): anyObject;
-    get _(): anyObject;
-    addExport(dataProperty: string, func: exportFunc, target: Node): shouldExportA;
-    removeExport(dataProperty: string, func: string | exportFunc): shouldExportA;
-    getExports(dataProperty: string): shouldExportA;
-    get methods(): functionObject;
-    get $(): functionObject;
-    hydrate(node: Nody): void;
-}
+export default function App(this: anyObject, rootNode_: Elementy, options_?: anyObject): anyObject;
 //# sourceMappingURL=app.d.ts.map

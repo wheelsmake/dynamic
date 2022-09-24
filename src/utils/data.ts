@@ -13,7 +13,7 @@ export function createData<T>(
 ) :data<T>{
     const result :data<T> = {
         value,
-        deleted: false,
+        //deleted: false,
         shouldUpdates: shouldUpdate || [],
         shouldExports: shouldExport || []
     }
@@ -49,8 +49,6 @@ export function checkArrowFunction(func :Function) :void{
 export function removeExport<T>(dataInstance :data<T>, func :string | exportFunc) :shouldExportA{
     const sE = dataInstance.shouldExports;
     if(typeof func == "string"){
-        //2022.8.30改用Symbol()保存内部函数，已不需要该判断
-        //if(func == "__addedByDynamic__") utils.generic.E("func", "string | exportFunc", func, "this name is reserved");
         if(func == "") console.warn("Operation blocked trying to remove ALL annoymous functions. Use the function itself for argument instead.");
         //注意这里会删除所有同名函数！
         else for(let i = 0; i < sE.length; i++) if(sE[i][0].name === func) utils.generic.precisePop(sE[i], sE);
@@ -66,13 +64,10 @@ export function isComputedProperty<T>(data :data<T>) :boolean{
     return typeof data.value == "function";
 }
 /**静态分析目标函数访问了哪些this属性，不要对此寄予厚望！*/
-//fixme:有很多地方不健壮，需要修复
 export function detectShouldUpdate(string :string) :shouldUpdateA{
     const inQuote = {double: false, single: false, reversed: false}, result = [];
     var resultAdding = false, subCursor = 0;
     for(let i = 0; i < string.length; i++){
-        //if(string[i] == "{" && !functionStarted) functionStarted = true;
-        //if(functionStarted){
         if(string[i] == "\\n"){
             inQuote.double = false;
             inQuote.single = false;
@@ -80,8 +75,7 @@ export function detectShouldUpdate(string :string) :shouldUpdateA{
         if(string[i] == "`" && !inQuote.single && !inQuote.double) inQuote.reversed = !inQuote.reversed;
         if(string[i] == '"' && !inQuote.single && !inQuote.reversed) inQuote.double = !inQuote.double;
         if(string[i] == "'" && !inQuote.double && !inQuote.reversed) inQuote.single = !inQuote.single;
-        //todo:字符串插值
-        if(inQuote.reversed && string[i] == "$" && string[i + 1] == "{") processTemplate(i);
+        //if(inQuote.reversed && string[i] == "$" && string[i + 1] == "{") processTemplate(i); //todo:字符串插值
         //console.log(string.substring(i - 5, i+5), inQuote);
         //if(string[i] == "]" && subCursor != 0 && !inQuote.single && !inQuote.double && !inQuote.reversed){
             //result.push(string.substring(subCursor, i - 2));
@@ -94,7 +88,7 @@ export function detectShouldUpdate(string :string) :shouldUpdateA{
         }
         if(!inQuote.single && !inQuote.double && !inQuote.reversed 
          && string[i] == "t" && string[i + 1] == "h" && string[i + 2] == "i" && string[i + 3] == "s"
-         && string[i + 4] == "." //我们决定不支持[]使用变量来访问this了，因为可能引用了外部变量，我们完全不可能知道
+         && string[i + 4] == "." //不支持[]使用变量来访问this，因为可能引用了完全不可能知道的外部变量
         ){
             subCursor = i + 5;
             i += 4; //跳过this.，不然在.那里就会出来
