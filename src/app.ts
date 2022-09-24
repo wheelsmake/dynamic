@@ -4,7 +4,8 @@
 */
 import * as utils from "../../utils/index";
 import * as lUtils from "./utils/index";
-const version = "2.1.9";
+import FreeDOM from "../../freeDOM/src/freedom";
+const version = "1.0.0";
 
 //开发模式
 console.info(
@@ -42,14 +43,14 @@ const
     ];
 
 //主函数
-export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObject{
+export default function App(this: anyObject, rootNode_ :Elementy, options_? :anyObject) :anyObject{
 
 //#region 常量声明
     const 
     rootNode = utils.arguments.reduceToElement(rootNode_)!,
-    //数据属性
+    //数据存储区
     dataStore :dataObject = {},
-    //公开属性
+    //保留属性（方法），本来应该是一个string[]，为了方便直接anyObject
     publics :anyObject = {
         rootNode,
         hydrate,
@@ -58,28 +59,14 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
         getExports,
         connect,
         disConnect,
-        getDataKeys,
-        //__getData__
-
-
-
+        get keys(){return [...Object.keys(publics), ...Object.keys(dataStore)]},
     },
-    reservedProperties = ["length", "name", "prototype", "arguments", "caller"],
     //插值位置记录
-    insertStore = new WeakMap<Element | Text, string | null>(),
-    //代理函数
-    pfuncSymbol = Symbol(),
-    pfuncObj = {
-        [pfuncSymbol]: function(){
-            //seize:或许可以在这里运行什么？
-        }
-    };
+    insertStore = new WeakMap<Element | Text, string | null>();
 //#endregion
 
 //#region important:开发专用方法，构建前将publics中的引用删除即可
-    function __getData__(){
-        return dataStore;
-    }
+
 //#endregion
 
 //#region DOM监控系统 WeakMap：96.59%（2022.8.22）
@@ -101,7 +88,8 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
     });
 //#endregion
 
-//#region 数据属性导出与更新CRUD
+//#region 数据属性特殊方法
+    //导出与更新CRUD
     function addExport(){
         //seize:
     }
@@ -119,18 +107,9 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
     }
 //#endregion
 
-//#region 数据属性杂项方法/处理
-    function getDataKeys() :string[]{
-        return Object.keys(dataStore);
-    }
-    //将公开属性挂载到代理函数上
-    for(let i in publics) (pfuncObj[pfuncSymbol] as anyObject)[i] = publics[i];
-//#endregion
-
 //#region 核心代理
-    //anyObject：指 鹿 为 马
-    const proxy :anyObject = new Proxy(pfuncObj[pfuncSymbol], {
-        get(target :anyObject, property :string, proxy :anyObject){
+    const proxy :anyObject = new Proxy(dataStore, {
+        get(_target :anyObject, property :string, proxy :anyObject){
             if(property in publics) return publics[property]; //提供保留属性
             else if(property in dataStore){ //提供数据属性
                 //如果是“计算”属性就返回缓存值
@@ -139,7 +118,7 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
             }
             else return undefined; //不存在该属性
         },
-        set(target :anyObject, property :string, newValue :any, proxy :anyObject){
+        set(_target :anyObject, property :string, newValue :any, proxy :anyObject){
             if(property in publics) utils.generic.EE(`${property}${$[6]}`); //这里不会返回true而会报错
             else if(property in dataStore){
                 //如果传入的是函数，那么就收集函数中需要的属性，将这些属性的shouldUpdate中推一个这个属性
@@ -188,48 +167,28 @@ export default function App(rootNode_ :Elementy, options_? :anyObject) :anyObjec
                         if(!(shouldUpdateThese[i] in dataStore)) proxy[shouldUpdateThese[i]] = undefined;
                         if(dataStore[shouldUpdateThese[i]].shouldUpdates.indexOf(property) == -1) dataStore[shouldUpdateThese[i]].shouldUpdates.push(property);
                     }
-                    //fixed:新建属性，让devTools能识别这个东西，下同
-                    if(reservedProperties.indexOf(property) == -1) target[property] = dataInstance.cache;
                 }
-                else{ //将“计算”属性变成普通属性
-                    delete dataInstance.cache; //反正delete不报错，随便操作
-                    if(reservedProperties.indexOf(property) == -1) target[property] = dataInstance.value;
-                }
+                //将“计算”属性变成普通属性
+                else delete dataInstance.cache; //反正delete不报错，随便操作
             }
         },
-        deleteProperty(target :anyObject, property :string){
+        deleteProperty(_target :anyObject, property :string){
             const exists = property in dataStore;
             if(property in publics) utils.generic.EE(`${property}${$[6]}`);
-            else if(exists){
-                delete dataStore[property];
-                delete target[property];
-            }
+            //这回是真删除
+            else if(exists) delete dataStore[property];
             return exists;
         },
-        apply(target, thisArg :any, argArray :any[]){
-            //todo:用于更新属性
-            if(argArray.length == 1 && argArray[0] in dataStore && "cache" in dataStore[argArray[0]]){
-                proxy[argArray[0]] = dataStore[argArray[0]].value;
-            }
-            else if(argArray.length == 0){
-                console.log("todo: update all computed data properties");
-            }
-        },
-        construct(target, argArray :any[], newTarget){
-            //seize:暂时不知道能用来干嘛
-            return {version};
-        },
-        //getPrototypeOf(target){}, 无需拦截
-        has(_target, property :string){return Reflect.has(dataStore, property);},
-        getOwnPropertyDescriptor(target, property :string){
-            if(property in dataStore) return Reflect.getOwnPropertyDescriptor(dataStore, property);
-            else return Reflect.getOwnPropertyDescriptor(target, property);
-        },
-        ownKeys(_target){return utils.generic.noRepeat([...Reflect.ownKeys(dataStore), "prototype", "caller", "arguments", "length", "name"]) as string[];},
-        isExtensible(){return true;},
+        //限制这堆奇怪的东西
         defineProperty(){utils.generic.EE(`${$[4]}defineProperty${$[5]}`);return false;},
         preventExtensions(){utils.generic.EE(`${$[4]}preventExtensions${$[5]}`);return false;},
         setPrototypeOf(){utils.generic.EE(`${$[4]}setPrototypeOf${$[5]}`);return false;}
+        //这些都无需拦截
+        //getPrototypeOf(target){},
+        //has(_target, property :string){},
+        //getOwnPropertyDescriptor(target, property :string){},
+        //ownKeys(){},
+        //isExtensible(){},
     });
 //#endregion
 

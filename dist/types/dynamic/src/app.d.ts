@@ -1,2 +1,2 @@
-export default function App(rootNode_: Elementy, options_?: anyObject): anyObject;
+export default function App(this: anyObject, rootNode_: Elementy, options_?: anyObject): anyObject;
 //# sourceMappingURL=app.d.ts.map

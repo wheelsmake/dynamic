@@ -16,7 +16,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/index */ "./src/utils/index.ts");
 
 
-const version = "2.2.0";
+const version = "1.0.0";
 console.info(`dynamic(dnJS) v${version} ©LJM12914. https://github.com/wheelsmake/dynamic
     You are using the unminified build of dynamic. Make sure to use the minified build for production.`);
 const DSL = {
@@ -47,14 +47,8 @@ function App(rootNode_, options_) {
         getExports,
         connect,
         disConnect,
-        getDataKeys,
-    }, reservedProperties = ["length", "name", "prototype", "arguments", "caller"], insertStore = new WeakMap(), pfuncSymbol = Symbol(), pfuncObj = {
-        [pfuncSymbol]: function () {
-        }
-    };
-    function __getData__() {
-        return dataStore;
-    }
+        get keys() { return [...Object.keys(publics), ...Object.keys(dataStore)]; },
+    }, insertStore = new WeakMap();
     const aOProcessorStore = new WeakMap();
     const dOProcessorStore = new WeakMap();
     const cOProcessorStore = new WeakMap();
@@ -79,13 +73,8 @@ function App(rootNode_, options_) {
     }
     function disConnect() {
     }
-    function getDataKeys() {
-        return Object.keys(dataStore);
-    }
-    for (let i in publics)
-        pfuncObj[pfuncSymbol][i] = publics[i];
-    const proxy = new Proxy(pfuncObj[pfuncSymbol], {
-        get(target, property, proxy) {
+    const proxy = new Proxy(dataStore, {
+        get(_target, property, proxy) {
             if (property in publics)
                 return publics[property];
             else if (property in dataStore) {
@@ -97,7 +86,7 @@ function App(rootNode_, options_) {
             else
                 return undefined;
         },
-        set(target, property, newValue, proxy) {
+        set(_target, property, newValue, proxy) {
             if (property in publics)
                 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${property}${$[6]}`);
             else if (property in dataStore) {
@@ -139,46 +128,19 @@ function App(rootNode_, options_) {
                         if (dataStore[shouldUpdateThese[i]].shouldUpdates.indexOf(property) == -1)
                             dataStore[shouldUpdateThese[i]].shouldUpdates.push(property);
                     }
-                    if (reservedProperties.indexOf(property) == -1)
-                        target[property] = dataInstance.cache;
                 }
-                else {
+                else
                     delete dataInstance.cache;
-                    if (reservedProperties.indexOf(property) == -1)
-                        target[property] = dataInstance.value;
-                }
             }
         },
-        deleteProperty(target, property) {
+        deleteProperty(_target, property) {
             const exists = property in dataStore;
             if (property in publics)
                 _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${property}${$[6]}`);
-            else if (exists) {
+            else if (exists)
                 delete dataStore[property];
-                delete target[property];
-            }
             return exists;
         },
-        apply(target, thisArg, argArray) {
-            if (argArray.length == 1 && argArray[0] in dataStore && "cache" in dataStore[argArray[0]]) {
-                proxy[argArray[0]] = dataStore[argArray[0]].value;
-            }
-            else if (argArray.length == 0) {
-                console.log("todo: update all computed data properties");
-            }
-        },
-        construct(target, argArray, newTarget) {
-            return { version };
-        },
-        has(_target, property) { return Reflect.has(dataStore, property); },
-        getOwnPropertyDescriptor(target, property) {
-            if (property in dataStore)
-                return Reflect.getOwnPropertyDescriptor(dataStore, property);
-            else
-                return Reflect.getOwnPropertyDescriptor(target, property);
-        },
-        ownKeys(_target) { return _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.noRepeat([...Reflect.ownKeys(dataStore), "prototype", "caller", "arguments", "length", "name"]); },
-        isExtensible() { return true; },
         defineProperty() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}defineProperty${$[5]}`); return false; },
         preventExtensions() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}preventExtensions${$[5]}`); return false; },
         setPrototypeOf() { _utils_index__WEBPACK_IMPORTED_MODULE_0__.generic.EE(`${$[4]}setPrototypeOf${$[5]}`); return false; }
